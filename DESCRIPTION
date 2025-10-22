@@ -1,0 +1,29 @@
+Package: ganttify
+Type: Package
+Title: Create Interactive Gantt Charts with Work Breakdown Structure
+Version: 0.1.0
+Authors@R: person("Ahmed", "Aredah", email = "Ahmed.Aredah@gmail.com",
+                  role = c("aut", "cre"))
+Description: Create Primavera-style interactive Gantt charts with Work Breakdown
+    Structure (WBS) hierarchy and activities. Features include color-coded WBS
+    items, indented labels, scrollable views for large projects, dynamic date
+    formatting, and the ability to dim past activities. Built on top of plotly
+    for interactive visualizations.
+License: GPL-3 + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 3.5.0)
+Imports:
+    plotly (>= 4.9.0),
+    dplyr (>= 1.0.0),
+    htmlwidgets (>= 1.5.0),
+    magrittr,
+    rlang
+RoxygenNote: 7.3.3
+Suggests:
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+URL: https://github.com/AhmedAredah/Ganttify
+BugReports: https://github.com/AhmedAredah/Ganttify/issues

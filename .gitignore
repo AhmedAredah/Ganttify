@@ -1,0 +1,26 @@
+# R project files
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Package development files
+*.tar.gz
+*.tgz
+.DS_Store
+
+# Documentation (auto-generated)
+man/
+NAMESPACE
+
+# Data directory will contain generated .rda files
+# data/
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# IDE files
+.vscode/
+.idea/

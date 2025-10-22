@@ -1,0 +1,9 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^data-raw$
+^PACKAGE_SETUP\.md$
+^\.git$
+^\.github$
+^LICENSE\.md$
+^README\.Rmd$
+^\.gitignore$
