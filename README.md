@@ -72,6 +72,9 @@ Ganttify(
 )
 ```
 
+<img width="1011" height="627" alt="image" src="https://github.com/user-attachments/assets/3f4d9465-8468-418d-86c2-f00874075152" />
+
+
 ### Dim Past Activities
 
 ```r
