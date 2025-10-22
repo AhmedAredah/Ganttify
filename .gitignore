@@ -9,9 +9,8 @@
 *.tgz
 .DS_Store
 
-# Documentation (auto-generated)
-man/
-NAMESPACE
+# NOTE: For R packages, man/ and NAMESPACE should NOT be ignored
+# They must be committed to the repository
 
 # Data directory will contain generated .rda files
 # data/
