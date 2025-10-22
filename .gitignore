@@ -9,11 +9,8 @@
 *.tgz
 .DS_Store
 
-# NOTE: For R packages, man/ and NAMESPACE should NOT be ignored
-# They must be committed to the repository
-
-# Data directory will contain generated .rda files
-# data/
+# NOTE: For R packages, man/, NAMESPACE, and data/ should NOT be ignored
+# They must be committed to the repository so users can access them
 
 # Temporary files
 *~
