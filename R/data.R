@@ -13,14 +13,17 @@
 #'       \item Parent: Parent WBS ID or "None" for root items
 #'     }
 #'   }
-#'   \item{activities}{A data frame with 15 rows and 5 columns:
+#'   \item{activities}{A data frame with 15 rows and 7 columns:
 #'     \itemize{
 #'       \item WBS_ID: Associated WBS item identifier
 #'       \item Activity_ID: Activity identifier (A1-A15)
 #'       \item Activity_Name: Activity name (e.g., "Design UI", "Code Frontend")
-#'       \item Start_Date: Activity start date in MM/DD/YYYY format
-#'       \item End_Date: Activity end date in MM/DD/YYYY format
+#'       \item Start_Date: Planned start date in MM/DD/YYYY format
+#'       \item End_Date: Planned end date in MM/DD/YYYY format
+#'       \item Start_Date_Actual: Actual start date in MM/DD/YYYY format (some NA for not started)
+#'       \item End_Date_Actual: Actual end date in MM/DD/YYYY format (some NA for in-progress)
 #'     }
+#'     Includes examples of on-time, delayed, ahead-of-schedule, and in-progress activities.
 #'   }
 #'   \item{colors}{A named list of 8 colors:
 #'     \itemize{

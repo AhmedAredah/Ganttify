@@ -27,6 +27,17 @@ activities <- data.frame(
                "11/15/2024", "11/30/2024", "11/10/2024", "11/05/2024",
                "11/15/2024", "11/25/2024", "12/05/2024",
                "12/15/2024", "12/25/2024", "01/15/2025", "01/10/2025", "01/20/2025"),
+  # Actual dates: demonstrate on-time, delayed, ahead, and in-progress activities
+  Start_Date_Actual = c("09/09/2024", "09/16/2024", "09/21/2024",  # Design: 1 day late start
+                        "10/01/2024", "10/03/2024", "10/15/2024", "10/22/2024",  # Dev: Backend late, DB late
+                        "11/01/2024", "11/12/2024", "11/20/2024",  # Testing: Integration late
+                        "12/01/2024", "12/10/2024", "12/18/2024",  # Deploy: Prod ahead!
+                        NA, NA),  # Training & Docs: not started yet
+  End_Date_Actual = c("09/28/2024", "10/06/2024", "09/29/2024",  # Design: UI early, Arch late, DB early
+                      "11/20/2024", "12/05/2024", "11/12/2024", "11/08/2024",  # Dev: varied
+                      "11/16/2024", "11/27/2024", "12/06/2024",  # Testing: mostly on track
+                      "12/14/2024", "12/23/2024", NA,  # Deploy: Prod in progress
+                      NA, NA),  # Training & Docs: not started
   stringsAsFactors = FALSE
 )
 

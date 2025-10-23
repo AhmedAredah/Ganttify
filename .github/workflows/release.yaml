@@ -1,0 +1,147 @@
+name: Auto Release on Version Change
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'DESCRIPTION'
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.check.outputs.should_release }}
+      new_version: ${{ steps.check.outputs.new_version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit to compare
+
+      - name: Check if version changed
+        id: check
+        run: |
+          # Get current version from DESCRIPTION
+          NEW_VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: //')
+
+          # Get previous version from last commit
+          git checkout HEAD~1 -- DESCRIPTION 2>/dev/null || true
+          OLD_VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: //' || echo "0.0.0")
+          git checkout HEAD -- DESCRIPTION
+
+          echo "Old version: $OLD_VERSION"
+          echo "New version: $NEW_VERSION"
+
+          if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
+            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Version changed from $OLD_VERSION to $NEW_VERSION - will create release"
+          else
+            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "ℹ️  Version unchanged - skipping release"
+          fi
+
+  release:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create and push tag
+        run: |
+          VERSION="${{ needs.check-version.outputs.new_version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install dependencies
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::devtools, any::roxygen2
+          needs: check
+
+      - name: Document package
+        run: roxygen2::roxygenise()
+        shell: Rscript {0}
+
+      - name: Build source package
+        id: build
+        run: |
+          pkg_file <- devtools::build(path = ".", manual = FALSE)
+          pkg_name <- basename(pkg_file)
+          cat(sprintf("PKG_FILE=%s\n", pkg_file), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+          cat(sprintf("PKG_NAME=%s\n", pkg_name), file = Sys.getenv("GITHUB_OUTPUT"), append = TRUE)
+        shell: Rscript {0}
+
+      - name: Extract release notes from NEWS.md
+        id: notes
+        run: |
+          VERSION="${{ needs.check-version.outputs.new_version }}"
+
+          if [ -f "NEWS.md" ]; then
+            NOTES=$(awk "/^# ganttify $VERSION/,/^# ganttify [0-9]/" NEWS.md | sed '1d;$d')
+            if [ -n "$NOTES" ]; then
+              echo "HAS_NOTES=true" >> $GITHUB_OUTPUT
+              {
+                echo "NOTES<<EOF"
+                echo "$NOTES"
+                echo "EOF"
+              } >> $GITHUB_OUTPUT
+            else
+              echo "HAS_NOTES=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "HAS_NOTES=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.check-version.outputs.new_version }}
+          name: ganttify v${{ needs.check-version.outputs.new_version }}
+          files: ${{ steps.build.outputs.PKG_FILE }}
+          generate_release_notes: true
+          body: |
+            ## Ganttify v${{ needs.check-version.outputs.new_version }}
+
+            ${{ steps.notes.outputs.HAS_NOTES == 'true' && steps.notes.outputs.NOTES || 'See full changelog below.' }}
+
+            ### Installation
+
+            **From GitHub:**
+            ```r
+            devtools::install_github("AhmedAredah/Ganttify@v${{ needs.check-version.outputs.new_version }}")
+            ```
+
+            **From source:**
+            ```r
+            # Download ${{ steps.build.outputs.PKG_NAME }} from assets
+            install.packages("${{ steps.build.outputs.PKG_NAME }}", repos = NULL, type = "source")
+            ```
+
+            **From CRAN:**
+            ```r
+            install.packages("ganttify")
+            ```
+
+            ---
+
+            📦 **Package**: `${{ steps.build.outputs.PKG_NAME }}`
+            📚 **Documentation**: https://ahmedaredah.github.io/Ganttify/
+            🐛 **Report Issues**: https://github.com/AhmedAredah/Ganttify/issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

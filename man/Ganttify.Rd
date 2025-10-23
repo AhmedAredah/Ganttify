@@ -29,9 +29,20 @@ Ganttify(
 \item{wbs_structure}{A data frame with 3 columns: ID (character), Name (character),
 and Parent (character). Parent should be "None" or "" for root level items.}
 
-\item{activities}{A data frame with 5 columns: WBS_ID (character), Activity_ID (character),
-Activity_Name (character), Start_Date (character in MM/DD/YYYY format),
-End_Date (character in MM/DD/YYYY format).}
+\item{activities}{A data frame with 5 required columns and 2 optional columns:
+\itemize{
+  \item WBS_ID (character): Associated WBS item identifier
+  \item Activity_ID (character): Unique activity identifier
+  \item Activity_Name (character): Activity name
+  \item Start_Date (character): Planned start date in MM/DD/YYYY format
+  \item End_Date (character): Planned end date in MM/DD/YYYY format
+  \item Start_Date_Actual (character, optional): Actual start date in MM/DD/YYYY format
+  \item End_Date_Actual (character, optional): Actual end date in MM/DD/YYYY format.
+    If Start_Date_Actual is provided but End_Date_Actual is missing, the actual bar
+    will show from Start_Date_Actual to today (if today > Start_Date_Actual).
+}
+When actual dates are provided, activities display as stacked bars: planned on top
+(solid color) and actual on bottom (diagonal stripe pattern).}
 
 \item{show_wbs_labels}{Logical. Show WBS item names on the y-axis. Default TRUE.}
 

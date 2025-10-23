@@ -18,9 +18,20 @@ NULL
 #'
 #' @param wbs_structure A data frame with 3 columns: ID (character), Name (character),
 #'   and Parent (character). Parent should be "None" or "" for root level items.
-#' @param activities A data frame with 5 columns: WBS_ID (character), Activity_ID (character),
-#'   Activity_Name (character), Start_Date (character in MM/DD/YYYY format),
-#'   End_Date (character in MM/DD/YYYY format).
+#' @param activities A data frame with 5 required columns and 2 optional columns:
+#'   \itemize{
+#'     \item WBS_ID (character): Associated WBS item identifier
+#'     \item Activity_ID (character): Unique activity identifier
+#'     \item Activity_Name (character): Activity name
+#'     \item Start_Date (character): Planned start date in MM/DD/YYYY format
+#'     \item End_Date (character): Planned end date in MM/DD/YYYY format
+#'     \item Start_Date_Actual (character, optional): Actual start date in MM/DD/YYYY format
+#'     \item End_Date_Actual (character, optional): Actual end date in MM/DD/YYYY format.
+#'       If Start_Date_Actual is provided but End_Date_Actual is missing, the actual bar
+#'       will show from Start_Date_Actual to today (if today > Start_Date_Actual).
+#'   }
+#'   When actual dates are provided, activities display as stacked bars: planned on top
+#'   (solid color) and actual on bottom (diagonal stripe pattern).
 #' @param show_wbs_labels Logical. Show WBS item names on the y-axis. Default TRUE.
 #' @param show_wbs_names_on_bars Logical. Show WBS names at the end of WBS bars. Default TRUE.
 #' @param show_activity_names_on_bars Logical. Show activity names at the end of activity bars.
@@ -110,15 +121,43 @@ Ganttify <- function(
   # ============================================
   # 1. DATA VALIDATION AND PREPARATION
   # ============================================
-  
+
   colnames(wbs_structure) <- c("ID", "Name", "Parent")
-  colnames(activities) <- c("WBS_ID", "Activity_ID", "Activity_Name", "Start_Date", "End_Date")
-  
+
+  # Check for actual date columns
+  has_actual_dates <- ncol(activities) >= 7
+
+  if (has_actual_dates) {
+    colnames(activities) <- c("WBS_ID", "Activity_ID", "Activity_Name", "Start_Date", "End_Date",
+                              "Start_Date_Actual", "End_Date_Actual")
+  } else {
+    colnames(activities) <- c("WBS_ID", "Activity_ID", "Activity_Name", "Start_Date", "End_Date")
+  }
+
+  # Parse planned dates
   activities$Start_Date <- as.Date(activities$Start_Date, format = "%m/%d/%Y")
   activities$End_Date <- as.Date(activities$End_Date, format = "%m/%d/%Y")
-  
+
   if (any(is.na(activities$Start_Date)) || any(is.na(activities$End_Date))) {
-    stop("Date parsing error. Please ensure dates are in MM/DD/YYYY format")
+    stop("Date parsing error. Please ensure planned dates are in MM/DD/YYYY format")
+  }
+
+  # Parse actual dates if present
+  if (has_actual_dates) {
+    activities$Start_Date_Actual <- as.Date(activities$Start_Date_Actual, format = "%m/%d/%Y")
+    activities$End_Date_Actual <- as.Date(activities$End_Date_Actual, format = "%m/%d/%Y")
+
+    # Handle missing End_Date_Actual: use today if after Start_Date_Actual
+    today_date <- Sys.Date()
+    for (i in 1:nrow(activities)) {
+      if (!is.na(activities$Start_Date_Actual[i]) && is.na(activities$End_Date_Actual[i])) {
+        if (today_date > activities$Start_Date_Actual[i]) {
+          activities$End_Date_Actual[i] <- today_date
+        } else {
+          activities$End_Date_Actual[i] <- activities$Start_Date_Actual[i]
+        }
+      }
+    }
   }
   
   # ============================================
@@ -168,8 +207,19 @@ Ganttify <- function(
     related_activities <- activities[activities$WBS_ID %in% descendants, ]
     
     if (nrow(related_activities) > 0) {
-      wbs_structure$Start_Date[i] <- min(related_activities$Start_Date, na.rm = TRUE)
-      wbs_structure$End_Date[i] <- max(related_activities$End_Date, na.rm = TRUE)
+      # Collect all dates (planned and actual) for min/max calculation
+      all_start_dates <- related_activities$Start_Date
+      all_end_dates <- related_activities$End_Date
+
+      # Include actual dates if they exist
+      if ("Start_Date_Actual" %in% colnames(related_activities)) {
+        all_start_dates <- c(all_start_dates, related_activities$Start_Date_Actual)
+        all_end_dates <- c(all_end_dates, related_activities$End_Date_Actual)
+      }
+
+      # Calculate WBS span as earliest start to latest end (across both planned and actual)
+      wbs_structure$Start_Date[i] <- min(all_start_dates, na.rm = TRUE)
+      wbs_structure$End_Date[i] <- max(all_end_dates, na.rm = TRUE)
     }
   }
   
@@ -231,7 +281,7 @@ Ganttify <- function(
     wbs_activities <- activities_df[activities_df$WBS_ID == wbs_id, ]
     if (nrow(wbs_activities) > 0) {
       for (j in 1:nrow(wbs_activities)) {
-        result <- c(result, list(list(
+        activity_item <- list(
           type = "Activity",
           id = wbs_activities$Activity_ID[j],
           name = wbs_activities$Activity_Name[j],
@@ -239,7 +289,15 @@ Ganttify <- function(
           level = wbs_df$Level[wbs_df$ID == wbs_id] + 1,
           start = wbs_activities$Start_Date[j],
           end = wbs_activities$End_Date[j]
-        )))
+        )
+
+        # Add actual dates if they exist
+        if ("Start_Date_Actual" %in% colnames(wbs_activities)) {
+          activity_item$start_actual <- wbs_activities$Start_Date_Actual[j]
+          activity_item$end_actual <- wbs_activities$End_Date_Actual[j]
+        }
+
+        result <- c(result, list(activity_item))
       }
     }
     
@@ -271,6 +329,8 @@ Ganttify <- function(
     y_label_html = character(),  # HTML version with bold for WBS
     start = as.Date(character()),
     end = as.Date(character()),
+    start_actual = as.Date(character()),
+    end_actual = as.Date(character()),
     type = character(),
     level = numeric(),
     id = character(),
@@ -300,6 +360,8 @@ Ganttify <- function(
         y_label_html = label_html,
         start = item$start,
         end = item$end,
+        start_actual = if (!is.null(item$start_actual)) item$start_actual else as.Date(NA),
+        end_actual = if (!is.null(item$end_actual)) item$end_actual else as.Date(NA),
         type = item$type,
         level = item$level,
         id = item$id,
@@ -416,7 +478,7 @@ Ganttify <- function(
       }
     }
     
-    # Add activity bars (constant thickness lines)
+    # Add activity bars (constant thickness lines or stacked planned/actual)
     if (nrow(activity_data) > 0) {
       for (i in 1:nrow(activity_data)) {
         wbs_id <- activity_data$wbs_id[i]
@@ -425,37 +487,111 @@ Ganttify <- function(
         } else {
           "#3498DB"
         }
-        
+
         # Determine if activity should be dimmed
         activity_opacity <- 1.0  # Default full opacity
         if (dim_past_activities && activity_data$end[i] < today_date) {
           activity_opacity <- dim_opacity  # Dim activities that end before today
         }
-        
-        # Add the bar line (without text)
-        fig <- fig %>% add_trace(
-          type = "scatter",
-          mode = "lines",
-          x = c(activity_data$start[i], activity_data$end[i]),
-          y = c(activity_data$y_position[i], activity_data$y_position[i]),
-          line = list(color = bar_color, width = 20),
-          opacity = activity_opacity,  # Use calculated opacity for dimming
-          name = "Activity",
-          showlegend = FALSE,
-          hoverinfo = "text",
-          hovertext = paste0(
-            "<b>", gsub("\u00A0", "", activity_data$y_label[i]), "</b><br>",
-            "Type: Activity<br>",
-            "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
-            "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
-            "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days"
+
+        # Check if actual dates exist for this activity
+        has_actuals <- !is.na(activity_data$start_actual[i]) && !is.na(activity_data$end_actual[i])
+
+        if (has_actuals) {
+          # STACKED BARS: Planned (top) and Actual (bottom)
+
+          # Calculate planned duration and variance
+          planned_duration <- as.numeric(activity_data$end[i] - activity_data$start[i]) + 1
+          actual_duration <- as.numeric(activity_data$end_actual[i] - activity_data$start_actual[i]) + 1
+          variance_days <- actual_duration - planned_duration
+
+          # Planned bar (upper half)
+          fig <- fig %>% add_trace(
+            type = "scatter",
+            mode = "lines",
+            x = c(activity_data$start[i], activity_data$end[i]),
+            y = c(activity_data$y_position[i] + 0.2, activity_data$y_position[i] + 0.2),
+            line = list(color = bar_color, width = 10),
+            opacity = activity_opacity,
+            name = "Planned",
+            showlegend = FALSE,
+            hoverinfo = "text",
+            hovertext = paste0(
+              "<b>", gsub("\u00A0", "", activity_data$y_label[i]), "</b><br>",
+              "Type: Activity<br><br>",
+              "<b>Planned:</b><br>",
+              "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
+              "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
+              "Duration: ", planned_duration, " days<br><br>",
+              "<b>Actual:</b><br>",
+              "Start: ", format(activity_data$start_actual[i], "%Y-%m-%d"), "<br>",
+              "End: ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
+              "Duration: ", actual_duration, " days<br>",
+              "Variance: ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days"
+            )
           )
-        )
-        
+
+          # Actual bar (lower half) with diagonal stripe effect
+          # Base actual bar
+          fig <- fig %>% add_trace(
+            type = "scatter",
+            mode = "lines",
+            x = c(activity_data$start_actual[i], activity_data$end_actual[i]),
+            y = c(activity_data$y_position[i] - 0.2, activity_data$y_position[i] - 0.2),
+            line = list(color = bar_color, width = 10),
+            opacity = activity_opacity * 0.4,  # Lighter background
+            name = "Actual",
+            showlegend = FALSE,
+            hoverinfo = "skip"
+          )
+
+          # Create diagonal stripe pattern using multiple thin lines
+          num_stripes <- 8
+          bar_duration <- as.numeric(activity_data$end_actual[i] - activity_data$start_actual[i])
+          if (bar_duration > 0) {
+            stripe_interval <- bar_duration / num_stripes
+            for (s in 1:num_stripes) {
+              stripe_x <- activity_data$start_actual[i] + (s - 1) * stripe_interval
+              fig <- fig %>% add_trace(
+                type = "scatter",
+                mode = "lines",
+                x = c(stripe_x, stripe_x),
+                y = c(activity_data$y_position[i] - 0.35, activity_data$y_position[i] - 0.05),
+                line = list(color = bar_color, width = 2),
+                opacity = activity_opacity * 0.8,
+                name = "Actual Stripe",
+                showlegend = FALSE,
+                hoverinfo = "skip"
+              )
+            }
+          }
+
+        } else {
+          # SINGLE BAR: Only planned dates (original behavior)
+          fig <- fig %>% add_trace(
+            type = "scatter",
+            mode = "lines",
+            x = c(activity_data$start[i], activity_data$end[i]),
+            y = c(activity_data$y_position[i], activity_data$y_position[i]),
+            line = list(color = bar_color, width = 20),
+            opacity = activity_opacity,
+            name = "Activity",
+            showlegend = FALSE,
+            hoverinfo = "text",
+            hovertext = paste0(
+              "<b>", gsub("\u00A0", "", activity_data$y_label[i]), "</b><br>",
+              "Type: Activity<br>",
+              "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
+              "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
+              "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days"
+            )
+          )
+        }
+
         # Add text annotation at the END of the bar if requested
         if (show_activity_names_on_bars) {
           text_annotations <- c(text_annotations, list(list(
-            x = activity_data$end[i],
+            x = if (has_actuals) max(activity_data$end[i], activity_data$end_actual[i]) else activity_data$end[i],
             y = activity_data$y_position[i],
             text = gsub("\u00A0", "", activity_data$y_label[i]),
             xanchor = "left",
@@ -499,12 +635,7 @@ Ganttify <- function(
   
   fig <- fig %>% layout(
     title = list(
-      text = paste0(chart_title, 
-                    if(total_rows > max_visible_rows) {
-                      paste0(" <i style='font-size:11px;'>(Showing ", max_visible_rows, " of ", total_rows, " rows)</i>")
-                    } else {
-                      ""
-                    }),
+      text = paste0(chart_title),
       font = list(size = 16)
     ),
     xaxis = list(
