@@ -9,7 +9,7 @@ Description: Create Primavera-style interactive Gantt charts with Work Breakdown
     items, indented labels, scrollable views for large projects, dynamic date
     formatting, and the ability to dim past activities. Built on top of plotly
     for interactive visualizations.
-License: GPL-3 + file LICENSE
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends:
@@ -24,6 +24,5 @@ RoxygenNote: 7.3.3
 Suggests:
     knitr,
     rmarkdown
-VignetteBuilder: knitr
 URL: https://github.com/AhmedAredah/Ganttify
 BugReports: https://github.com/AhmedAredah/Ganttify/issues
