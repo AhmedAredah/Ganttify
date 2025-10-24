@@ -7,22 +7,14 @@
 Ganttify(
   wbs_structure,
   activities,
-  show_wbs_labels = TRUE,
-  show_wbs_names_on_bars = TRUE,
-  show_activity_names_on_bars = FALSE,
-  show_today_line = TRUE,
-  dim_past_activities = FALSE,
-  dim_opacity = 0.3,
-  wbs_colors = NULL,
-  wbs_opacity = 0.3,
-  wbs_bar_height = 0.3,
-  activity_bar_height = 0.8,
   chart_title = "Project Gantt Chart with WBS",
-  buffer_days = 30,
-  indent_size = 4,
   x_range = NULL,
-  max_visible_rows = 20,
-  y_scroll_position = NULL
+  milestone_lines = NULL,
+  color_config = NULL,
+  display_config = NULL,
+  label_config = NULL,
+  bar_config = NULL,
+  layout_config = NULL
 )
 }
 \arguments{
@@ -44,47 +36,93 @@ and Parent (character). Parent should be "None" or "" for root level items.}
 When actual dates are provided, activities display as stacked bars: planned on top
 (solid color) and actual on bottom (diagonal stripe pattern).}
 
-\item{show_wbs_labels}{Logical. Show WBS item names on the y-axis. Default TRUE.}
-
-\item{show_wbs_names_on_bars}{Logical. Show WBS names at the end of WBS bars. Default TRUE.}
-
-\item{show_activity_names_on_bars}{Logical. Show activity names at the end of activity bars.
-Default FALSE.}
-
-\item{show_today_line}{Logical. Display a vertical line marking today's date. Default TRUE.}
-
-\item{dim_past_activities}{Logical. Reduce opacity of activities that end before today.
-Default FALSE.}
-
-\item{dim_opacity}{Numeric. Opacity level for dimmed activities (0-1). Only used when
-dim_past_activities is TRUE. Default 0.3.}
-
-\item{wbs_colors}{Named list. Custom colors for each WBS ID (e.g., list("W1" = "#FF6B6B")).
-If NULL, uses default color palette.}
-
-\item{wbs_opacity}{Numeric. Opacity of WBS bars (0-1). Default 0.3.}
-
-\item{wbs_bar_height}{Numeric. Height of WBS bars. Default 0.3.}
-
-\item{activity_bar_height}{Numeric. Height of activity bars. Default 0.8.}
-
 \item{chart_title}{Character. Title displayed at the top of the chart.
 Default "Project Gantt Chart with WBS".}
-
-\item{buffer_days}{Numeric. Number of days to add before and after the project timeline
-for margin. Default 30.}
-
-\item{indent_size}{Numeric. Number of spaces per indentation level in y-axis labels.
-Default 4.}
 
 \item{x_range}{Character vector. Date range for x-axis zoom (e.g., c("2024-01-01", "2024-12-31")).
 If NULL, shows full project range.}
 
-\item{max_visible_rows}{Numeric. Maximum number of rows visible at once (enables scrolling).
-Default 20.}
+\item{milestone_lines}{Data frame or NULL. Optional milestone lines to display on the chart.
+If provided, must be a data frame with the following columns:
+\itemize{
+  \item date (required): Date for the vertical line (character in MM/DD/YYYY format or Date object)
+  \item label (required): Text label to display on the line
+  \item color (optional): Line color (e.g., "red", "#FF0000"). Defaults to color palette if not provided.
+  \item dash (optional): Line style - "solid", "dash", "dot", or "dashdot". Default "dash".
+  \item width (optional): Line width in pixels. Default 2.
+  \item label_position (optional): Label position - "top", "middle", or "bottom". Default "top".
+}
+Default NULL (no milestone lines).}
 
-\item{y_scroll_position}{Numeric. Initial scroll position (bottom of visible range).
-If NULL, starts at the bottom.}
+\item{color_config}{List or NULL. Configuration for chart colors. Structure depends on mode:
+\itemize{
+  \item mode="wbs" (default if NULL): Activities inherit colors from parent WBS
+    \preformatted{list(mode = "wbs", wbs = list("W1" = "#FF6B6B", "W2" = "#4ECDC4"))}
+  \item mode="uniform": All activities same color, WBS same color
+    \preformatted{list(mode = "uniform", uniform = list(wbs = "#34495E", activity = "#2ECC71"))}
+  \item mode="attribute": Color activities by attribute column (e.g., Status)
+    \preformatted{list(mode = "attribute",
+         attribute = list(column = "Status",
+                        mapping = list("completed" = "green", "in-progress" = "orange"),
+                        wbs = "#34495E"))}
+}
+If NULL, uses mode="wbs" with default color palette. Default NULL.}
+
+\item{display_config}{List or NULL. Controls visibility of chart elements. Structure:
+\itemize{
+  \item wbs: List with show (logical), show_labels (logical), show_names_on_bars (logical)
+  \item activity: List with show (logical), show_names_on_bars (logical)
+}
+Example: \preformatted{list(
+  wbs = list(show = TRUE, show_labels = TRUE, show_names_on_bars = TRUE),
+  activity = list(show = TRUE, show_names_on_bars = FALSE)
+)}
+If NULL, uses defaults shown above. Default NULL.}
+
+\item{label_config}{List or NULL. Template strings for labels. Structure:
+\itemize{
+  \item activity: List with yaxis (template for y-axis labels) and bar (template for bar labels)
+  \item wbs: List with yaxis and bar templates
+}
+Available placeholders for activity: {name}, {id}, {start}, {end}, {start_actual}, {end_actual}, {duration}, {wbs_id}
+Available placeholders for wbs: {name}, {id}, {start}, {end}, {duration}
+Example: \preformatted{list(
+  activity = list(yaxis = "{name} ({start} - {end})", bar = "{name}"),
+  wbs = list(yaxis = "{name}", bar = "{name}")
+)}
+If NULL, uses "{name}" for all labels. Default NULL.}
+
+\item{bar_config}{List or NULL. Styling configuration for bars. Structure:
+\itemize{
+  \item wbs: List with opacity (0-1) and height (numeric)
+  \item activity: List with opacity (0-1), height (numeric), dim_opacity (0-1), and dim_past_activities (logical)
+}
+The dim_past_activities field controls whether activities that end before today are dimmed.
+When TRUE, completed activities use the dim_opacity value instead of the regular opacity.
+Example: \preformatted{list(
+  wbs = list(opacity = 0.3, height = 0.3),
+  activity = list(opacity = 1.0, height = 0.8, dim_opacity = 0.3, dim_past_activities = FALSE)
+)}
+If NULL, uses defaults shown above. Default NULL.}
+
+\item{layout_config}{List or NULL. Chart layout settings. Structure:
+\itemize{
+  \item buffer_days: Numeric, days to add before/after timeline for margin
+  \item indent_size: Numeric, spaces per indentation level
+  \item max_visible_rows: Numeric, maximum visible rows (enables scrolling)
+  \item y_scroll_position: Numeric or NULL, initial scroll position
+  \item yaxis_label_width: Numeric, width of y-axis label area in pixels (default 300)
+  \item yaxis_label_max_chars: Numeric or NULL, maximum characters for labels before truncating with "..." (NULL = no truncation)
+}
+Example: \preformatted{list(
+  buffer_days = 30,
+  indent_size = 2,
+  max_visible_rows = 20,
+  y_scroll_position = NULL,
+  yaxis_label_width = 300,
+  yaxis_label_max_chars = NULL
+)}
+If NULL, uses defaults shown above. Default NULL.}
 }
 \value{
 A plotly object containing the interactive Gantt chart. Can be displayed directly
@@ -100,31 +138,74 @@ scrollable view for large projects, and dynamic date formatting.
 # Load test data
 data(test_project)
 
-# Basic Gantt chart
+# Basic Gantt chart with WBS colors
 chart <- Ganttify(
   wbs_structure = test_project$wbs_structure,
   activities = test_project$activities,
-  wbs_colors = test_project$colors
+  color_config = list(mode = "wbs", wbs = test_project$colors)
 )
 chart
 
-# With dimmed past activities
+# Uniform color mode
 chart <- Ganttify(
   wbs_structure = test_project$wbs_structure,
   activities = test_project$activities,
-  wbs_colors = test_project$colors,
-  dim_past_activities = TRUE,
-  dim_opacity = 0.4
+  color_config = list(
+    mode = "uniform",
+    uniform = list(wbs = "#34495E", activity = "#2ECC71")
+  )
 )
 chart
 
-# With names on bars
+# WBS-only view using display_config
 chart <- Ganttify(
   wbs_structure = test_project$wbs_structure,
   activities = test_project$activities,
-  wbs_colors = test_project$colors,
-  show_wbs_names_on_bars = TRUE,
-  show_activity_names_on_bars = TRUE
+  display_config = list(activity = list(show = FALSE))
+)
+chart
+
+# Custom labels showing date ranges
+chart <- Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  label_config = list(
+    activity = list(yaxis = "{name} ({start} - {end})")
+  )
+)
+chart
+
+# Customize bar heights and enable dimming for past activities
+chart <- Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  bar_config = list(
+    wbs = list(opacity = 0.5, height = 0.4),
+    activity = list(height = 0.9, dim_past_activities = TRUE, dim_opacity = 0.4)
+  )
+)
+chart
+
+# Add "today" line as a milestone
+chart <- Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  milestone_lines = data.frame(
+    date = Sys.Date(),
+    label = "Today",
+    color = "red"
+  )
+)
+chart
+
+# Narrow label area with truncation
+chart <- Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  layout_config = list(
+    yaxis_label_width = 200,
+    yaxis_label_max_chars = 25
+  )
 )
 chart
 }
