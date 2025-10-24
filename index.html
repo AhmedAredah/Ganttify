@@ -75,7 +75,7 @@
 <li>
 <strong>WBS Hierarchy</strong>: Organize projects with multi-level Work Breakdown Structure</li>
 <li>
-<strong>Color-Coded Items</strong>: Customizable colors for each WBS element</li>
+<strong>Flexible Coloring</strong>: Three color modes - WBS-based, uniform, or attribute-based (status, priority, etc.)</li>
 <li>
 <strong>Interactive Charts</strong>: Pan, zoom, and hover for detailed information</li>
 <li>
@@ -83,11 +83,17 @@
 <li>
 <strong>Scrollable Views</strong>: Handle large projects with vertical scrolling</li>
 <li>
-<strong>Past Activity Dimming</strong>: Optionally dim completed activities for better focus</li>
+<strong>Milestone Lines</strong>: Add vertical date markers with custom labels (including “today” line)</li>
 <li>
-<strong>Flexible Display</strong>: Show/hide WBS and activity names on bars</li>
+<strong>Past Activity Dimming</strong>: Optionally dim completed activities for better focus (via bar_config)</li>
 <li>
-<strong>Today Line</strong>: Visual indicator for current date</li>
+<strong>Flexible Display</strong>: Show/hide WBS and activity names on bars (via display_config)</li>
+<li>
+<strong>Custom Label Templates</strong>: Customize labels with placeholders for dates, duration, IDs (via label_config)</li>
+<li>
+<strong>Planned vs Actual</strong>: Show both planned and actual dates with visual distinction</li>
+<li>
+<strong>Configuration-Based API</strong>: Organized parameters into logical config objects for cleaner code</li>
 </ul>
 </div>
 <div class="section level2">
@@ -123,7 +129,7 @@
 <span><span class="va">chart</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
 <span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
-<span>  wbs_colors <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span></span>
+<span>  color_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"wbs"</span>, wbs <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Display the chart</span></span>
@@ -143,48 +149,136 @@
 <span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
 <span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
-<span>  wbs_colors <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span>,</span>
+<span>  color_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"wbs"</span>, wbs <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span><span class="op">)</span>,</span>
 <span>  chart_title <span class="op">=</span> <span class="st">"My Project Schedule"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><img width="1011" height="627" alt="image" src="https://github.com/user-attachments/assets/3f4d9465-8468-418d-86c2-f00874075152"></p>
 </div>
 <div class="section level3">
-<h3 id="dim-past-activities">Dim Past Activities<a class="anchor" aria-label="anchor" href="#dim-past-activities"></a>
+<h3 id="color-modes">Color Modes<a class="anchor" aria-label="anchor" href="#color-modes"></a>
 </h3>
+<div class="section level4">
+<h4 id="wbs-based-colors-default">WBS-Based Colors (Default)<a class="anchor" aria-label="anchor" href="#wbs-based-colors-default"></a>
+</h4>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Highlight completed work by dimming past activities</span></span>
+<code class="sourceCode R"><span><span class="co"># Activities inherit colors from their parent WBS item</span></span>
 <span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
 <span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
-<span>  wbs_colors <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span>,</span>
-<span>  dim_past_activities <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  dim_opacity <span class="op">=</span> <span class="fl">0.3</span></span>
+<span>  color_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    mode <span class="op">=</span> <span class="st">"wbs"</span>,</span>
+<span>    wbs <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="show-names-on-bars">Show Names on Bars<a class="anchor" aria-label="anchor" href="#show-names-on-bars"></a>
-</h3>
+<div class="section level4">
+<h4 id="uniform-colors">Uniform Colors<a class="anchor" aria-label="anchor" href="#uniform-colors"></a>
+</h4>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Display WBS and activity names directly on bars</span></span>
+<code class="sourceCode R"><span><span class="co"># All activities one color, all WBS items one color</span></span>
 <span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
 <span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
-<span>  wbs_colors <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span>,</span>
-<span>  show_wbs_names_on_bars <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  show_activity_names_on_bars <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span>  color_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    mode <span class="op">=</span> <span class="st">"uniform"</span>,</span>
+<span>    uniform <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      wbs <span class="op">=</span> <span class="st">"#34495E"</span>,       <span class="co"># dark gray for WBS</span></span>
+<span>      activity <span class="op">=</span> <span class="st">"#2ECC71"</span>   <span class="co"># green for activities</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="custom-scrolling-view">Custom Scrolling View<a class="anchor" aria-label="anchor" href="#custom-scrolling-view"></a>
-</h3>
+<div class="section level4">
+<h4 id="attribute-based-colors">Attribute-Based Colors<a class="anchor" aria-label="anchor" href="#attribute-based-colors"></a>
+</h4>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Control visible rows for large projects</span></span>
+<code class="sourceCode R"><span><span class="co"># Color activities by custom attribute (e.g., Status, Priority)</span></span>
+<span><span class="co"># First, add a status column to activities</span></span>
+<span><span class="va">activities_with_status</span> <span class="op">&lt;-</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span></span>
+<span><span class="va">activities_with_status</span><span class="op">$</span><span class="va">Status</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"completed"</span>, <span class="st">"in-progress"</span>, <span class="st">"not-started"</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">activities_with_status</span>,</span>
+<span>  color_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    mode <span class="op">=</span> <span class="st">"attribute"</span>,</span>
+<span>    attribute <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      column <span class="op">=</span> <span class="st">"Status"</span>,</span>
+<span>      mapping <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>        <span class="st">"completed"</span> <span class="op">=</span> <span class="st">"#27AE60"</span>,     <span class="co"># green</span></span>
+<span>        <span class="st">"in-progress"</span> <span class="op">=</span> <span class="st">"#F39C12"</span>,   <span class="co"># orange</span></span>
+<span>        <span class="st">"not-started"</span> <span class="op">=</span> <span class="st">"#95A5A6"</span>,   <span class="co"># gray</span></span>
+<span>        <span class="st">"stopped"</span> <span class="op">=</span> <span class="st">"#E74C3C"</span>        <span class="co"># red</span></span>
+<span>      <span class="op">)</span>,</span>
+<span>      wbs <span class="op">=</span> <span class="st">"#34495E"</span>  <span class="co"># dark gray for WBS</span></span>
+<span>    <span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+<div class="section level3">
+<h3 id="other-features">Other Features<a class="anchor" aria-label="anchor" href="#other-features"></a>
+</h3>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># WBS-only view (hide activities using display_config)</span></span>
 <span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
 <span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
-<span>  wbs_colors <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span>,</span>
-<span>  max_visible_rows <span class="op">=</span> <span class="fl">15</span>,</span>
-<span>  buffer_days <span class="op">=</span> <span class="fl">60</span></span>
+<span>  display_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>show <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Custom labels with date ranges</span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  label_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>yaxis <span class="op">=</span> <span class="st">"{name} ({start} - {end})"</span><span class="op">)</span>,</span>
+<span>    wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>yaxis <span class="op">=</span> <span class="st">"{name}"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Customize bar appearance and dim past activities</span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  bar_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>opacity <span class="op">=</span> <span class="fl">0.5</span>, height <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span>,</span>
+<span>    activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>height <span class="op">=</span> <span class="fl">0.9</span>, dim_past_activities <span class="op">=</span> <span class="cn">TRUE</span>, dim_opacity <span class="op">=</span> <span class="fl">0.4</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Add "today" line and other milestones</span></span>
+<span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  date <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Sys.time.html" class="external-link">Sys.Date</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"10/15/2024"</span>, <span class="st">"12/01/2024"</span><span class="op">)</span>,</span>
+<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Today"</span>, <span class="st">"Review"</span>, <span class="st">"Release"</span><span class="op">)</span>,</span>
+<span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"red"</span>, <span class="st">"blue"</span>, <span class="st">"green"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  milestone_lines <span class="op">=</span> <span class="va">milestones</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Adjust layout settings</span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  layout_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    buffer_days <span class="op">=</span> <span class="fl">60</span>,</span>
+<span>    indent_size <span class="op">=</span> <span class="fl">4</span>,</span>
+<span>    max_visible_rows <span class="op">=</span> <span class="fl">30</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Narrow label area with automatic truncation</span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  layout_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    yaxis_label_width <span class="op">=</span> <span class="fl">200</span>,</span>
+<span>    yaxis_label_max_chars <span class="op">=</span> <span class="fl">25</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -195,7 +289,7 @@
 <h3 id="wbs-structure-format">WBS Structure Format<a class="anchor" aria-label="anchor" href="#wbs-structure-format"></a>
 </h3>
 <p>Your WBS data frame should have 3 columns:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">wbs_structure</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"W1"</span>, <span class="st">"W2"</span>, <span class="st">"W3"</span><span class="op">)</span>,</span>
 <span>  Name <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Project"</span>, <span class="st">"Phase 1"</span>, <span class="st">"Phase 2"</span><span class="op">)</span>,</span>
@@ -206,7 +300,7 @@
 <h3 id="activities-format">Activities Format<a class="anchor" aria-label="anchor" href="#activities-format"></a>
 </h3>
 <p>Your activities data frame should have 5 columns:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">activities</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  WBS_ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"W2"</span>, <span class="st">"W2"</span>, <span class="st">"W3"</span><span class="op">)</span>,</span>
 <span>  Activity_ID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A1"</span>, <span class="st">"A2"</span>, <span class="st">"A3"</span><span class="op">)</span>,</span>
@@ -217,13 +311,30 @@
 <p><strong>Note:</strong> Dates must be in <code>MM/DD/YYYY</code> format.</p>
 </div>
 <div class="section level3">
-<h3 id="custom-colors-optional">Custom Colors (Optional)<a class="anchor" aria-label="anchor" href="#custom-colors-optional"></a>
+<h3 id="color-configuration">Color Configuration<a class="anchor" aria-label="anchor" href="#color-configuration"></a>
 </h3>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
-<span>  <span class="st">"W1"</span> <span class="op">=</span> <span class="st">"#FF6B6B"</span>,</span>
-<span>  <span class="st">"W2"</span> <span class="op">=</span> <span class="st">"#4ECDC4"</span>,</span>
-<span>  <span class="st">"W3"</span> <span class="op">=</span> <span class="st">"#45B7D1"</span></span>
+<p>The <code>color_config</code> parameter controls all chart colors. Three modes available:</p>
+<p><strong>1. WBS Mode (default)</strong> - Activities inherit colors from parent WBS:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">color_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  mode <span class="op">=</span> <span class="st">"wbs"</span>,</span>
+<span>  wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"W1"</span> <span class="op">=</span> <span class="st">"#FF6B6B"</span>, <span class="st">"W2"</span> <span class="op">=</span> <span class="st">"#4ECDC4"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>2. Uniform Mode</strong> - All activities same color:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">color_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  mode <span class="op">=</span> <span class="st">"uniform"</span>,</span>
+<span>  uniform <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>wbs <span class="op">=</span> <span class="st">"#34495E"</span>, activity <span class="op">=</span> <span class="st">"#2ECC71"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><strong>3. Attribute Mode</strong> - Color by custom attribute:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">color_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  mode <span class="op">=</span> <span class="st">"attribute"</span>,</span>
+<span>  attribute <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    column <span class="op">=</span> <span class="st">"Status"</span>,</span>
+<span>    mapping <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"completed"</span> <span class="op">=</span> <span class="st">"green"</span>, <span class="st">"in-progress"</span> <span class="op">=</span> <span class="st">"orange"</span><span class="op">)</span>,</span>
+<span>    wbs <span class="op">=</span> <span class="st">"#34495E"</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -231,39 +342,57 @@
 <h2 id="parameters">Parameters<a class="anchor" aria-label="anchor" href="#parameters"></a>
 </h2>
 <p>Key parameters for the <code><a href="reference/Ganttify.html">Ganttify()</a></code> function:</p>
+<div class="section level3">
+<h3 id="core-data">Core Data<a class="anchor" aria-label="anchor" href="#core-data"></a>
+</h3>
 <ul>
 <li>
 <code>wbs_structure</code>: Data frame with WBS hierarchy (ID, Name, Parent)</li>
 <li>
 <code>activities</code>: Data frame with activities (WBS_ID, Activity_ID, Activity_Name, Start_Date, End_Date)</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="configuration-objects">Configuration Objects<a class="anchor" aria-label="anchor" href="#configuration-objects"></a>
+</h3>
+<ul>
 <li>
-<code>wbs_colors</code>: Named list of colors for each WBS item</li>
+<code>color_config</code>: List configuring chart colors (mode: “wbs”, “uniform”, or “attribute”)</li>
 <li>
-<code>show_today_line</code>: Show vertical line at current date (default: TRUE)</li>
+<code>display_config</code>: List controlling visibility (WBS/activity show, labels, names on bars)</li>
 <li>
-<code>dim_past_activities</code>: Dim completed activities (default: FALSE)</li>
+<code>label_config</code>: List with label templates for y-axis and bars (supports placeholders)</li>
 <li>
-<code>dim_opacity</code>: Opacity for dimmed activities (default: 0.3)</li>
+<code>bar_config</code>: List with bar styling (opacity, height, dim_opacity, dim_past_activities)</li>
+<li>
+<code>layout_config</code>: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars)</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="other-parameters">Other Parameters<a class="anchor" aria-label="anchor" href="#other-parameters"></a>
+</h3>
+<ul>
+<li>
+<code>milestone_lines</code>: Data frame with milestone dates and labels (use Sys.Date() for “today” line)</li>
 <li>
 <code>chart_title</code>: Chart title (default: “Project Gantt Chart with WBS”)</li>
 <li>
-<code>max_visible_rows</code>: Number of visible rows for scrolling (default: 20)</li>
-<li>
-<code>buffer_days</code>: Extra days before/after timeline (default: 30)</li>
+<code>x_range</code>: Date range for x-axis zoom</li>
 </ul>
 <p>See <code><a href="reference/Ganttify.html">?Ganttify</a></code> for complete documentation.</p>
+</div>
 </div>
 <div class="section level2">
 <h2 id="saving-charts">Saving Charts<a class="anchor" aria-label="anchor" href="#saving-charts"></a>
 </h2>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ramnathv/htmlwidgets" class="external-link">htmlwidgets</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Create chart</span></span>
 <span><span class="va">chart</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
 <span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
-<span>  wbs_colors <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span></span>
+<span>  color_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"wbs"</span>, wbs <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">colors</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Save as HTML</span></span>
