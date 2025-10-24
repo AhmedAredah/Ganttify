@@ -44,7 +44,7 @@
 #' chart <- Ganttify(
 #'   wbs_structure = test_project$wbs_structure,
 #'   activities = test_project$activities,
-#'   wbs_colors = test_project$colors
+#'   color_config = list(mode = "wbs", wbs = test_project$colors)
 #' )
 #' chart
 #' }
