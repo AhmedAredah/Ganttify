@@ -200,6 +200,15 @@ Ganttify(
     yaxis_label_max_chars = 25
   )
 )
+
+# Control hover popup width with text wrapping
+Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  layout_config = list(
+    hover_popup_max_chars = 30  # Wrap long text in popups at 30 chars
+  )
+)
 ```
 
 ## Data Structure
@@ -277,7 +286,7 @@ Key parameters for the `Ganttify()` function:
 - `display_config`: List controlling visibility (WBS/activity show, labels, names on bars)
 - `label_config`: List with label templates for y-axis and bars (supports placeholders)
 - `bar_config`: List with bar styling (opacity, height, dim_opacity, dim_past_activities)
-- `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars)
+- `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars)
 
 ### Other Parameters
 - `milestone_lines`: Data frame with milestone dates and labels (use Sys.Date() for "today" line)
