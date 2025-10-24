@@ -21,7 +21,7 @@ Ganttify(
 \item{wbs_structure}{A data frame with 3 columns: ID (character), Name (character),
 and Parent (character). Parent should be "None" or "" for root level items.}
 
-\item{activities}{A data frame with 5 required columns and 2 optional columns:
+\item{activities}{A data frame with 5 required columns, 2 optional columns, and any number of additional columns:
 \itemize{
   \item WBS_ID (character): Associated WBS item identifier
   \item Activity_ID (character): Unique activity identifier
@@ -32,6 +32,8 @@ and Parent (character). Parent should be "None" or "" for root level items.}
   \item End_Date_Actual (character, optional): Actual end date in MM/DD/YYYY format.
     If Start_Date_Actual is provided but End_Date_Actual is missing, the actual bar
     will show from Start_Date_Actual to today (if today > Start_Date_Actual).
+  \item Additional columns (optional): Any extra columns (e.g., Status, Agency, Priority) are preserved
+    and can be used for attribute-based coloring via color_config with mode="attribute".
 }
 When actual dates are provided, activities display as stacked bars: planned on top
 (solid color) and actual on bottom (diagonal stripe pattern).}
@@ -155,6 +157,25 @@ chart <- Ganttify(
   color_config = list(
     mode = "uniform",
     uniform = list(wbs = "#34495E", activity = "#2ECC71")
+  )
+)
+chart
+
+# Attribute-based coloring (requires extra column in activities)
+# Add a Status column to activities dataframe
+activities_with_status <- test_project$activities
+activities_with_status$Status <- sample(c("completed", "in-progress", "pending"),
+                                        nrow(activities_with_status), replace = TRUE)
+chart <- Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = activities_with_status,
+  color_config = list(
+    mode = "attribute",
+    attribute = list(
+      column = "Status",
+      mapping = list("completed" = "green", "in-progress" = "orange", "pending" = "gray"),
+      wbs = "#34495E"
+    )
   )
 )
 chart

@@ -1,7 +1,7 @@
 Package: ganttify
 Type: Package
 Title: Create Interactive Gantt Charts with Work Breakdown Structure
-Version: 0.1.5
+Version: 0.1.6
 Authors@R: person("Ahmed", "Aredah", email = "Ahmed.Aredah@gmail.com",
                   role = c("aut", "cre"))
 Description: Create Primavera-style interactive Gantt charts with Work Breakdown

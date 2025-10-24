@@ -19,7 +19,7 @@ NULL
 #'
 #' @param wbs_structure A data frame with 3 columns: ID (character), Name (character),
 #'   and Parent (character). Parent should be "None" or "" for root level items.
-#' @param activities A data frame with 5 required columns and 2 optional columns:
+#' @param activities A data frame with 5 required columns, 2 optional columns, and any number of additional columns:
 #'   \itemize{
 #'     \item WBS_ID (character): Associated WBS item identifier
 #'     \item Activity_ID (character): Unique activity identifier
@@ -30,6 +30,8 @@ NULL
 #'     \item End_Date_Actual (character, optional): Actual end date in MM/DD/YYYY format.
 #'       If Start_Date_Actual is provided but End_Date_Actual is missing, the actual bar
 #'       will show from Start_Date_Actual to today (if today > Start_Date_Actual).
+#'     \item Additional columns (optional): Any extra columns (e.g., Status, Agency, Priority) are preserved
+#'       and can be used for attribute-based coloring via color_config with mode="attribute".
 #'   }
 #'   When actual dates are provided, activities display as stacked bars: planned on top
 #'   (solid color) and actual on bottom (diagonal stripe pattern).
@@ -139,6 +141,25 @@ NULL
 #'   color_config = list(
 #'     mode = "uniform",
 #'     uniform = list(wbs = "#34495E", activity = "#2ECC71")
+#'   )
+#' )
+#' chart
+#'
+#' # Attribute-based coloring (requires extra column in activities)
+#' # Add a Status column to activities dataframe
+#' activities_with_status <- test_project$activities
+#' activities_with_status$Status <- sample(c("completed", "in-progress", "pending"),
+#'                                         nrow(activities_with_status), replace = TRUE)
+#' chart <- Ganttify(
+#'   wbs_structure = test_project$wbs_structure,
+#'   activities = activities_with_status,
+#'   color_config = list(
+#'     mode = "attribute",
+#'     attribute = list(
+#'       column = "Status",
+#'       mapping = list("completed" = "green", "in-progress" = "orange", "pending" = "gray"),
+#'       wbs = "#34495E"
+#'     )
 #'   )
 #' )
 #' chart
@@ -337,17 +358,24 @@ Ganttify <- function(
     return(paste(lines, collapse = "<br>"))
   }
 
-  colnames(wbs_structure) <- c("ID", "Name", "Parent")
+  # Validate WBS structure columns
+  required_wbs_cols <- c("ID", "Name", "Parent")
+  if (!all(required_wbs_cols %in% colnames(wbs_structure))) {
+    missing_cols <- setdiff(required_wbs_cols, colnames(wbs_structure))
+    stop(paste0("WBS structure must have columns: ", paste(required_wbs_cols, collapse = ", "),
+                ". Missing: ", paste(missing_cols, collapse = ", ")))
+  }
+
+  # Validate activities columns
+  required_activity_cols <- c("WBS_ID", "Activity_ID", "Activity_Name", "Start_Date", "End_Date")
+  if (!all(required_activity_cols %in% colnames(activities))) {
+    missing_cols <- setdiff(required_activity_cols, colnames(activities))
+    stop(paste0("Activities dataframe must have columns: ", paste(required_activity_cols, collapse = ", "),
+                ". Missing: ", paste(missing_cols, collapse = ", ")))
+  }
 
   # Check for actual date columns
-  has_actual_dates <- ncol(activities) >= 7
-
-  if (has_actual_dates) {
-    colnames(activities) <- c("WBS_ID", "Activity_ID", "Activity_Name", "Start_Date", "End_Date",
-                              "Start_Date_Actual", "End_Date_Actual")
-  } else {
-    colnames(activities) <- c("WBS_ID", "Activity_ID", "Activity_Name", "Start_Date", "End_Date")
-  }
+  has_actual_dates <- all(c("Start_Date_Actual", "End_Date_Actual") %in% colnames(activities))
 
   # Parse planned dates
   activities$Start_Date <- as.Date(activities$Start_Date, format = "%m/%d/%Y")
