@@ -113,6 +113,7 @@ If NULL, uses defaults shown above. Default NULL.}
   \item y_scroll_position: Numeric or NULL, initial scroll position
   \item yaxis_label_width: Numeric, width of y-axis label area in pixels (default 300)
   \item yaxis_label_max_chars: Numeric or NULL, maximum characters for labels before truncating with "..." (NULL = no truncation)
+  \item hover_popup_max_chars: Numeric, maximum characters per line in hover popups before wrapping to next line (default 50)
 }
 Example: \preformatted{list(
   buffer_days = 30,
@@ -120,7 +121,8 @@ Example: \preformatted{list(
   max_visible_rows = 20,
   y_scroll_position = NULL,
   yaxis_label_width = 300,
-  yaxis_label_max_chars = NULL
+  yaxis_label_max_chars = NULL,
+  hover_popup_max_chars = 50
 )}
 If NULL, uses defaults shown above. Default NULL.}
 }

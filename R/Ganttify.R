@@ -103,6 +103,7 @@ NULL
 #'     \item y_scroll_position: Numeric or NULL, initial scroll position
 #'     \item yaxis_label_width: Numeric, width of y-axis label area in pixels (default 300)
 #'     \item yaxis_label_max_chars: Numeric or NULL, maximum characters for labels before truncating with "..." (NULL = no truncation)
+#'     \item hover_popup_max_chars: Numeric, maximum characters per line in hover popups before wrapping to next line (default 50)
 #'   }
 #'   Example: \preformatted{list(
 #'     buffer_days = 30,
@@ -110,7 +111,8 @@ NULL
 #'     max_visible_rows = 20,
 #'     y_scroll_position = NULL,
 #'     yaxis_label_width = 300,
-#'     yaxis_label_max_chars = NULL
+#'     yaxis_label_max_chars = NULL,
+#'     hover_popup_max_chars = 50
 #'   )}
 #'   If NULL, uses defaults shown above. Default NULL.
 #'
@@ -295,6 +297,44 @@ Ganttify <- function(
       if (tail(points, 1) != end_date) points <- c(points, end_date)
       return(points)
     }
+  }
+
+  # Helper function to wrap text for hover popups
+  wrap_text_for_hover <- function(text, max_chars) {
+    # If no limit or text is short enough, return as-is
+    if (is.null(max_chars) || nchar(text) <= max_chars) {
+      return(text)
+    }
+
+    # Split text into words
+    words <- strsplit(text, "\\s+")[[1]]
+    lines <- character()
+    current_line <- ""
+
+    for (word in words) {
+      # Test if adding this word would exceed the limit
+      test_line <- if (current_line == "") word else paste(current_line, word)
+
+      if (nchar(test_line) <= max_chars) {
+        # Word fits on current line
+        current_line <- test_line
+      } else {
+        # Word doesn't fit, start new line
+        if (current_line != "") lines <- c(lines, current_line)
+        current_line <- word
+
+        # If single word is longer than max, truncate it
+        if (nchar(word) > max_chars) {
+          current_line <- substr(word, 1, max_chars)
+        }
+      }
+    }
+
+    # Add the last line
+    if (current_line != "") lines <- c(lines, current_line)
+
+    # Join lines with HTML line break
+    return(paste(lines, collapse = "<br>"))
   }
 
   colnames(wbs_structure) <- c("ID", "Name", "Parent")
@@ -590,7 +630,8 @@ Ganttify <- function(
       max_visible_rows = 20,
       y_scroll_position = NULL,
       yaxis_label_width = 300,
-      yaxis_label_max_chars = NULL
+      yaxis_label_max_chars = NULL,
+      hover_popup_max_chars = 50
     )
   }
 
@@ -600,6 +641,7 @@ Ganttify <- function(
   y_scroll_position <- layout_config$y_scroll_position  # Can be NULL
   yaxis_label_width <- layout_config$yaxis_label_width %||% 300
   yaxis_label_max_chars <- layout_config$yaxis_label_max_chars  # Can be NULL
+  hover_popup_max_chars <- layout_config$hover_popup_max_chars %||% 50
 
   # ============================================
   # 2. BUILD WBS HIERARCHY
@@ -948,7 +990,7 @@ Ganttify <- function(
           showlegend = FALSE,
           hoverinfo = "text",
           hovertext = paste0(
-            "<b>", gsub("\u00A0", "", wbs_data$y_label[i]), "</b><br>",
+            "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label[i]), hover_popup_max_chars), "</b><br>",
             "Type: WBS<br>",
             "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
             "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
@@ -1043,7 +1085,7 @@ Ganttify <- function(
             showlegend = FALSE,
             hoverinfo = "text",
             hovertext = paste0(
-              "<b>", gsub("\u00A0", "", activity_data$y_label[i]), "</b><br>",
+              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label[i]), hover_popup_max_chars), "</b><br>",
               "Type: Activity<br><br>",
               "<b>Planned:</b><br>",
               "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
@@ -1113,7 +1155,7 @@ Ganttify <- function(
             showlegend = FALSE,
             hoverinfo = "text",
             hovertext = paste0(
-              "<b>", gsub("\u00A0", "", activity_data$y_label[i]), "</b><br>",
+              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label[i]), hover_popup_max_chars), "</b><br>",
               "Type: Activity<br>",
               "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
               "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
@@ -1178,7 +1220,7 @@ Ganttify <- function(
           showlegend = FALSE,
           hoverinfo = "text",
           hovertext = paste0(
-            "<b>", milestone_data$label[i], "</b><br>",
+            "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
             "Date: ", format(milestone_date, "%Y-%m-%d")
           )
         )
