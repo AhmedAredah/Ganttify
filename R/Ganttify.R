@@ -32,32 +32,86 @@ NULL
 #'   }
 #'   When actual dates are provided, activities display as stacked bars: planned on top
 #'   (solid color) and actual on bottom (diagonal stripe pattern).
-#' @param show_wbs_labels Logical. Show WBS item names on the y-axis. Default TRUE.
-#' @param show_wbs_names_on_bars Logical. Show WBS names at the end of WBS bars. Default TRUE.
-#' @param show_activity_names_on_bars Logical. Show activity names at the end of activity bars.
-#'   Default FALSE.
-#' @param show_today_line Logical. Display a vertical line marking today's date. Default TRUE.
-#' @param dim_past_activities Logical. Reduce opacity of activities that end before today.
-#'   Default FALSE.
-#' @param dim_opacity Numeric. Opacity level for dimmed activities (0-1). Only used when
-#'   dim_past_activities is TRUE. Default 0.3.
-#' @param wbs_colors Named list. Custom colors for each WBS ID (e.g., list("W1" = "#FF6B6B")).
-#'   If NULL, uses default color palette.
-#' @param wbs_opacity Numeric. Opacity of WBS bars (0-1). Default 0.3.
-#' @param wbs_bar_height Numeric. Height of WBS bars. Default 0.3.
-#' @param activity_bar_height Numeric. Height of activity bars. Default 0.8.
 #' @param chart_title Character. Title displayed at the top of the chart.
 #'   Default "Project Gantt Chart with WBS".
-#' @param buffer_days Numeric. Number of days to add before and after the project timeline
-#'   for margin. Default 30.
-#' @param indent_size Numeric. Number of spaces per indentation level in y-axis labels.
-#'   Default 4.
 #' @param x_range Character vector. Date range for x-axis zoom (e.g., c("2024-01-01", "2024-12-31")).
 #'   If NULL, shows full project range.
-#' @param max_visible_rows Numeric. Maximum number of rows visible at once (enables scrolling).
-#'   Default 20.
-#' @param y_scroll_position Numeric. Initial scroll position (bottom of visible range).
-#'   If NULL, starts at the bottom.
+#' @param milestone_lines Data frame or NULL. Optional milestone lines to display on the chart.
+#'   If provided, must be a data frame with the following columns:
+#'   \itemize{
+#'     \item date (required): Date for the vertical line (character in MM/DD/YYYY format or Date object)
+#'     \item label (required): Text label to display on the line
+#'     \item color (optional): Line color (e.g., "red", "#FF0000"). Defaults to color palette if not provided.
+#'     \item dash (optional): Line style - "solid", "dash", "dot", or "dashdot". Default "dash".
+#'     \item width (optional): Line width in pixels. Default 2.
+#'     \item label_position (optional): Label position - "top", "middle", or "bottom". Default "top".
+#'   }
+#'   Default NULL (no milestone lines).
+#' @param color_config List or NULL. Configuration for chart colors. Structure depends on mode:
+#'   \itemize{
+#'     \item mode="wbs" (default if NULL): Activities inherit colors from parent WBS
+#'       \preformatted{list(mode = "wbs", wbs = list("W1" = "#FF6B6B", "W2" = "#4ECDC4"))}
+#'     \item mode="uniform": All activities same color, WBS same color
+#'       \preformatted{list(mode = "uniform", uniform = list(wbs = "#34495E", activity = "#2ECC71"))}
+#'     \item mode="attribute": Color activities by attribute column (e.g., Status)
+#'       \preformatted{list(mode = "attribute",
+#'            attribute = list(column = "Status",
+#'                           mapping = list("completed" = "green", "in-progress" = "orange"),
+#'                           wbs = "#34495E"))}
+#'   }
+#'   If NULL, uses mode="wbs" with default color palette. Default NULL.
+#' @param display_config List or NULL. Controls visibility of chart elements. Structure:
+#'   \itemize{
+#'     \item wbs: List with show (logical), show_labels (logical), show_names_on_bars (logical)
+#'     \item activity: List with show (logical), show_names_on_bars (logical)
+#'   }
+#'   Example: \preformatted{list(
+#'     wbs = list(show = TRUE, show_labels = TRUE, show_names_on_bars = TRUE),
+#'     activity = list(show = TRUE, show_names_on_bars = FALSE)
+#'   )}
+#'   If NULL, uses defaults shown above. Default NULL.
+#' @param label_config List or NULL. Template strings for labels. Structure:
+#'   \itemize{
+#'     \item activity: List with yaxis (template for y-axis labels) and bar (template for bar labels)
+#'     \item wbs: List with yaxis and bar templates
+#'   }
+#'   Available placeholders for activity: {name}, {id}, {start}, {end}, {start_actual}, {end_actual}, {duration}, {wbs_id}
+#'   Available placeholders for wbs: {name}, {id}, {start}, {end}, {duration}
+#'   Example: \preformatted{list(
+#'     activity = list(yaxis = "{name} ({start} - {end})", bar = "{name}"),
+#'     wbs = list(yaxis = "{name}", bar = "{name}")
+#'   )}
+#'   If NULL, uses "{name}" for all labels. Default NULL.
+#' @param bar_config List or NULL. Styling configuration for bars. Structure:
+#'   \itemize{
+#'     \item wbs: List with opacity (0-1) and height (numeric)
+#'     \item activity: List with opacity (0-1), height (numeric), dim_opacity (0-1), and dim_past_activities (logical)
+#'   }
+#'   The dim_past_activities field controls whether activities that end before today are dimmed.
+#'   When TRUE, completed activities use the dim_opacity value instead of the regular opacity.
+#'   Example: \preformatted{list(
+#'     wbs = list(opacity = 0.3, height = 0.3),
+#'     activity = list(opacity = 1.0, height = 0.8, dim_opacity = 0.3, dim_past_activities = FALSE)
+#'   )}
+#'   If NULL, uses defaults shown above. Default NULL.
+#' @param layout_config List or NULL. Chart layout settings. Structure:
+#'   \itemize{
+#'     \item buffer_days: Numeric, days to add before/after timeline for margin
+#'     \item indent_size: Numeric, spaces per indentation level
+#'     \item max_visible_rows: Numeric, maximum visible rows (enables scrolling)
+#'     \item y_scroll_position: Numeric or NULL, initial scroll position
+#'     \item yaxis_label_width: Numeric, width of y-axis label area in pixels (default 300)
+#'     \item yaxis_label_max_chars: Numeric or NULL, maximum characters for labels before truncating with "..." (NULL = no truncation)
+#'   }
+#'   Example: \preformatted{list(
+#'     buffer_days = 30,
+#'     indent_size = 2,
+#'     max_visible_rows = 20,
+#'     y_scroll_position = NULL,
+#'     yaxis_label_width = 300,
+#'     yaxis_label_max_chars = NULL
+#'   )}
+#'   If NULL, uses defaults shown above. Default NULL.
 #'
 #' @return A plotly object containing the interactive Gantt chart. Can be displayed directly
 #'   or saved using htmlwidgets::saveWidget().
@@ -67,31 +121,74 @@ NULL
 #' # Load test data
 #' data(test_project)
 #'
-#' # Basic Gantt chart
+#' # Basic Gantt chart with WBS colors
 #' chart <- Ganttify(
 #'   wbs_structure = test_project$wbs_structure,
 #'   activities = test_project$activities,
-#'   wbs_colors = test_project$colors
+#'   color_config = list(mode = "wbs", wbs = test_project$colors)
 #' )
 #' chart
 #'
-#' # With dimmed past activities
+#' # Uniform color mode
 #' chart <- Ganttify(
 #'   wbs_structure = test_project$wbs_structure,
 #'   activities = test_project$activities,
-#'   wbs_colors = test_project$colors,
-#'   dim_past_activities = TRUE,
-#'   dim_opacity = 0.4
+#'   color_config = list(
+#'     mode = "uniform",
+#'     uniform = list(wbs = "#34495E", activity = "#2ECC71")
+#'   )
 #' )
 #' chart
 #'
-#' # With names on bars
+#' # WBS-only view using display_config
 #' chart <- Ganttify(
 #'   wbs_structure = test_project$wbs_structure,
 #'   activities = test_project$activities,
-#'   wbs_colors = test_project$colors,
-#'   show_wbs_names_on_bars = TRUE,
-#'   show_activity_names_on_bars = TRUE
+#'   display_config = list(activity = list(show = FALSE))
+#' )
+#' chart
+#'
+#' # Custom labels showing date ranges
+#' chart <- Ganttify(
+#'   wbs_structure = test_project$wbs_structure,
+#'   activities = test_project$activities,
+#'   label_config = list(
+#'     activity = list(yaxis = "{name} ({start} - {end})")
+#'   )
+#' )
+#' chart
+#'
+#' # Customize bar heights and enable dimming for past activities
+#' chart <- Ganttify(
+#'   wbs_structure = test_project$wbs_structure,
+#'   activities = test_project$activities,
+#'   bar_config = list(
+#'     wbs = list(opacity = 0.5, height = 0.4),
+#'     activity = list(height = 0.9, dim_past_activities = TRUE, dim_opacity = 0.4)
+#'   )
+#' )
+#' chart
+#'
+#' # Add "today" line as a milestone
+#' chart <- Ganttify(
+#'   wbs_structure = test_project$wbs_structure,
+#'   activities = test_project$activities,
+#'   milestone_lines = data.frame(
+#'     date = Sys.Date(),
+#'     label = "Today",
+#'     color = "red"
+#'   )
+#' )
+#' chart
+#'
+#' # Narrow label area with truncation
+#' chart <- Ganttify(
+#'   wbs_structure = test_project$wbs_structure,
+#'   activities = test_project$activities,
+#'   layout_config = list(
+#'     yaxis_label_width = 200,
+#'     yaxis_label_max_chars = 25
+#'   )
 #' )
 #' chart
 #' }
@@ -100,27 +197,104 @@ NULL
 Ganttify <- function(
     wbs_structure,
     activities,
-    show_wbs_labels = TRUE,
-    show_wbs_names_on_bars = TRUE,
-    show_activity_names_on_bars = FALSE,
-    show_today_line = TRUE,
-    dim_past_activities = FALSE,  # PARAMETER: Dim activities that end before today
-    dim_opacity = 0.3,  # PARAMETER: Opacity level for dimmed activities (default 0.3)
-    wbs_colors = NULL,
-    wbs_opacity = 0.3,
-    wbs_bar_height = 0.3,
-    activity_bar_height = 0.8,
     chart_title = "Project Gantt Chart with WBS",
-    buffer_days = 30,
-    indent_size = 4,
     x_range = NULL,
-    max_visible_rows = 20,  # Maximum rows visible at once
-    y_scroll_position = NULL  # Current scroll position (bottom of visible range)
+    milestone_lines = NULL,
+    color_config = NULL,
+    display_config = NULL,
+    label_config = NULL,
+    bar_config = NULL,
+    layout_config = NULL
 ) {
   
   # ============================================
   # 1. DATA VALIDATION AND PREPARATION
   # ============================================
+
+  # Helper function to format labels using templates
+  format_label <- function(template, data_list) {
+    result <- template
+    for (key in names(data_list)) {
+      value <- data_list[[key]]
+      # Handle NA values
+      if (is.na(value)) {
+        value <- ""
+      } else if (inherits(value, "Date")) {
+        value <- format(value, "%m/%d/%Y")
+      } else {
+        value <- as.character(value)
+      }
+      result <- gsub(paste0("\\{", key, "\\}"), value, result)
+    }
+    return(result)
+  }
+
+  # Helper function to truncate labels if they exceed max characters
+  truncate_label <- function(label, max_chars, preserve_html = FALSE) {
+    if (is.null(max_chars)) return(label)
+
+    # Extract indent (leading spaces/nbsp)
+    indent_match <- regexpr("^(\\s|\u00A0)+", label)
+    if (indent_match > 0) {
+      indent <- substring(label, 1, attr(indent_match, "match.length"))
+      label_content <- substring(label, attr(indent_match, "match.length") + 1)
+    } else {
+      indent <- ""
+      label_content <- label
+    }
+
+    # Remove HTML tags for character counting if present
+    if (preserve_html) {
+      # Extract text between HTML tags
+      label_text <- gsub("<b>", "", label_content)
+      label_text <- gsub("</b>", "", label_text)
+    } else {
+      label_text <- label_content
+    }
+
+    # Check if truncation needed
+    if (nchar(label_text) > max_chars) {
+      truncated_text <- substring(label_text, 1, max_chars - 3)
+      if (preserve_html && grepl("<b>", label_content)) {
+        # Preserve HTML tags
+        return(paste0(indent, "<b>", truncated_text, "...</b>"))
+      } else {
+        return(paste0(indent, truncated_text, "..."))
+      }
+    }
+
+    return(label)
+  }
+
+  # Helper function to generate intermediate points for hover coverage
+  # Adapts point density based on activity duration
+  generate_hover_points <- function(start_date, end_date) {
+    duration <- as.numeric(end_date - start_date)
+
+    if (duration == 0) {
+      # Same day: just 2 points (start and end)
+      return(c(start_date, start_date))
+    } else if (duration <= 7) {
+      # 1 week or less: daily points for smooth hover
+      return(seq(start_date, end_date, by = 1))
+    } else if (duration <= 90) {
+      # 1-3 months: every 3 days
+      points <- seq(start_date, end_date, by = 3)
+      # Always include end date
+      if (tail(points, 1) != end_date) points <- c(points, end_date)
+      return(points)
+    } else if (duration <= 365) {
+      # 3-12 months: weekly points
+      points <- seq(start_date, end_date, by = 7)
+      if (tail(points, 1) != end_date) points <- c(points, end_date)
+      return(points)
+    } else {
+      # > 1 year: bi-weekly points (14 days)
+      points <- seq(start_date, end_date, by = 14)
+      if (tail(points, 1) != end_date) points <- c(points, end_date)
+      return(points)
+    }
+  }
 
   colnames(wbs_structure) <- c("ID", "Name", "Parent")
 
@@ -159,7 +333,273 @@ Ganttify <- function(
       }
     }
   }
-  
+
+  # ============================================
+  # 1B. PROCESS MILESTONE LINES
+  # ============================================
+
+  milestone_data <- NULL
+  if (!is.null(milestone_lines)) {
+    # Validate that milestone_lines is a data frame
+    if (!is.data.frame(milestone_lines)) {
+      stop("milestone_lines must be a data frame")
+    }
+
+    # Check required columns
+    if (!"date" %in% names(milestone_lines) || !"label" %in% names(milestone_lines)) {
+      stop("milestone_lines must have 'date' and 'label' columns")
+    }
+
+    # Create a copy to work with
+    milestone_data <- milestone_lines
+
+    # Parse dates
+    if (is.character(milestone_data$date)) {
+      milestone_data$date <- as.Date(milestone_data$date, format = "%m/%d/%Y")
+    } else if (!inherits(milestone_data$date, "Date")) {
+      milestone_data$date <- as.Date(milestone_data$date)
+    }
+
+    # Check for invalid dates
+    if (any(is.na(milestone_data$date))) {
+      stop("Invalid dates in milestone_lines. Please use MM/DD/YYYY format or Date objects")
+    }
+
+    # Add default values for optional columns
+    if (!"color" %in% names(milestone_data)) {
+      # Default color palette for milestones
+      default_colors <- c("#8B4513", "#2E8B57", "#4682B4", "#9932CC", "#FF6347",
+                         "#FFD700", "#00CED1", "#FF1493", "#32CD32", "#FF8C00")
+      milestone_data$color <- rep(default_colors, length.out = nrow(milestone_data))
+    }
+
+    if (!"dash" %in% names(milestone_data)) {
+      milestone_data$dash <- "dash"
+    }
+
+    if (!"width" %in% names(milestone_data)) {
+      milestone_data$width <- 2
+    }
+
+    if (!"label_position" %in% names(milestone_data)) {
+      milestone_data$label_position <- "top"
+    }
+
+    # Validate label_position values
+    valid_positions <- c("top", "middle", "bottom")
+    invalid_positions <- !milestone_data$label_position %in% valid_positions
+    if (any(invalid_positions)) {
+      milestone_data$label_position[invalid_positions] <- "top"
+      warning("Invalid label_position values found. Using 'top' as default. Valid values: 'top', 'middle', 'bottom'")
+    }
+  }
+
+  # ============================================
+  # 1C. PARSE AND VALIDATE COLOR CONFIG
+  # ============================================
+
+  # Set default if NULL
+  if (is.null(color_config)) {
+    color_config <- list(mode = "wbs")
+  }
+
+  # Validate mode
+  valid_modes <- c("wbs", "uniform", "attribute")
+  if (!"mode" %in% names(color_config)) {
+    stop("color_config must have a 'mode' field")
+  }
+  if (!color_config$mode %in% valid_modes) {
+    stop("color_config$mode must be one of: 'wbs', 'uniform', or 'attribute'")
+  }
+
+  # Extract and validate based on mode
+  activity_color_mode <- color_config$mode
+
+  if (activity_color_mode == "wbs") {
+    # WBS mode
+    if (is.null(color_config$wbs)) {
+      # Use default palette
+      unique_wbs <- unique(wbs_structure$ID)
+      default_palette <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                          "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf")
+      wbs_colors <- setNames(
+        rep(default_palette, length.out = length(unique_wbs)),
+        unique_wbs
+      )
+    } else {
+      wbs_colors <- as.list(color_config$wbs)
+    }
+    uniform_activity_color <- NULL
+    uniform_wbs_color <- NULL
+    activity_color_column <- NULL
+    activity_color_mapping <- NULL
+
+  } else if (activity_color_mode == "uniform") {
+    # Uniform mode
+    if (is.null(color_config$uniform)) {
+      stop("color_config$uniform must be provided when mode='uniform'")
+    }
+    if (is.null(color_config$uniform$wbs)) {
+      uniform_wbs_color <- "#34495E"  # default dark gray
+    } else {
+      uniform_wbs_color <- color_config$uniform$wbs
+    }
+    if (is.null(color_config$uniform$activity)) {
+      uniform_activity_color <- "#2ECC71"  # default green
+    } else {
+      uniform_activity_color <- color_config$uniform$activity
+    }
+    wbs_colors <- NULL
+    activity_color_column <- NULL
+    activity_color_mapping <- NULL
+
+  } else if (activity_color_mode == "attribute") {
+    # Attribute mode
+    if (is.null(color_config$attribute)) {
+      stop("color_config$attribute must be provided when mode='attribute'")
+    }
+    if (is.null(color_config$attribute$column)) {
+      stop("color_config$attribute$column must be specified")
+    }
+
+    activity_color_column <- color_config$attribute$column
+
+    # Check if column exists
+    if (!activity_color_column %in% colnames(activities)) {
+      stop(paste0("Column '", activity_color_column, "' not found in activities dataframe"))
+    }
+
+    # Prepare color mapping
+    if (is.null(color_config$attribute$mapping)) {
+      # Use default palette
+      unique_values <- unique(activities[[activity_color_column]])
+      default_palette <- c("#27AE60", "#F39C12", "#E74C3C", "#3498DB", "#9B59B6",
+                          "#1ABC9C", "#E67E22", "#95A5A6", "#34495E", "#16A085")
+      activity_color_mapping <- setNames(
+        rep(default_palette, length.out = length(unique_values)),
+        unique_values
+      )
+      warning(paste0("No mapping provided in color_config$attribute$mapping. Using default colors for '",
+                    activity_color_column, "'"))
+    } else {
+      activity_color_mapping <- as.list(color_config$attribute$mapping)
+    }
+
+    # WBS color for attribute mode
+    if (is.null(color_config$attribute$wbs)) {
+      uniform_wbs_color <- "#34495E"  # default dark gray
+    } else {
+      uniform_wbs_color <- color_config$attribute$wbs
+    }
+
+    wbs_colors <- NULL
+    uniform_activity_color <- NULL
+  }
+
+  # ============================================
+  # 1D. PARSE AND VALIDATE DISPLAY CONFIG
+  # ============================================
+
+  # Set defaults if NULL
+  if (is.null(display_config)) {
+    display_config <- list(
+      wbs = list(show = TRUE, show_labels = TRUE, show_names_on_bars = TRUE),
+      activity = list(show = TRUE, show_names_on_bars = FALSE)
+    )
+  }
+
+  # Extract WBS display settings
+  if (is.null(display_config$wbs)) {
+    display_config$wbs <- list(show = TRUE, show_labels = TRUE, show_names_on_bars = TRUE)
+  }
+  show_wbs <- display_config$wbs$show %||% TRUE
+  show_wbs_labels <- display_config$wbs$show_labels %||% TRUE
+  show_wbs_names_on_bars <- display_config$wbs$show_names_on_bars %||% TRUE
+
+  # Extract activity display settings
+  if (is.null(display_config$activity)) {
+    display_config$activity <- list(show = TRUE, show_names_on_bars = FALSE)
+  }
+  show_activities <- display_config$activity$show %||% TRUE
+  show_activity_names_on_bars <- display_config$activity$show_names_on_bars %||% FALSE
+
+  # ============================================
+  # 1E. PARSE AND VALIDATE LABEL CONFIG
+  # ============================================
+
+  # Set defaults if NULL
+  if (is.null(label_config)) {
+    label_config <- list(
+      activity = list(yaxis = "{name}", bar = "{name}"),
+      wbs = list(yaxis = "{name}", bar = "{name}")
+    )
+  }
+
+  # Extract activity label templates
+  if (is.null(label_config$activity)) {
+    label_config$activity <- list(yaxis = "{name}", bar = "{name}")
+  }
+  activity_label_template <- label_config$activity$yaxis %||% "{name}"
+  activity_bar_label_template <- label_config$activity$bar %||% "{name}"
+
+  # Extract WBS label templates
+  if (is.null(label_config$wbs)) {
+    label_config$wbs <- list(yaxis = "{name}", bar = "{name}")
+  }
+  wbs_label_template <- label_config$wbs$yaxis %||% "{name}"
+  wbs_bar_label_template <- label_config$wbs$bar %||% "{name}"
+
+  # ============================================
+  # 1F. PARSE AND VALIDATE BAR CONFIG
+  # ============================================
+
+  # Set defaults if NULL
+  if (is.null(bar_config)) {
+    bar_config <- list(
+      wbs = list(opacity = 0.3, height = 0.3),
+      activity = list(opacity = 1.0, height = 0.8, dim_opacity = 0.3, dim_past_activities = FALSE)
+    )
+  }
+
+  # Extract WBS bar settings
+  if (is.null(bar_config$wbs)) {
+    bar_config$wbs <- list(opacity = 0.3, height = 0.3)
+  }
+  wbs_opacity <- bar_config$wbs$opacity %||% 0.3
+  wbs_bar_height <- bar_config$wbs$height %||% 0.3
+
+  # Extract activity bar settings
+  if (is.null(bar_config$activity)) {
+    bar_config$activity <- list(opacity = 1.0, height = 0.8, dim_opacity = 0.3, dim_past_activities = FALSE)
+  }
+  activity_opacity <- bar_config$activity$opacity %||% 1.0
+  activity_bar_height <- bar_config$activity$height %||% 0.8
+  dim_opacity <- bar_config$activity$dim_opacity %||% 0.3
+  dim_past_activities <- bar_config$activity$dim_past_activities %||% FALSE
+
+  # ============================================
+  # 1G. PARSE AND VALIDATE LAYOUT CONFIG
+  # ============================================
+
+  # Set defaults if NULL
+  if (is.null(layout_config)) {
+    layout_config <- list(
+      buffer_days = 30,
+      indent_size = 2,
+      max_visible_rows = 20,
+      y_scroll_position = NULL,
+      yaxis_label_width = 300,
+      yaxis_label_max_chars = NULL
+    )
+  }
+
+  buffer_days <- layout_config$buffer_days %||% 30
+  indent_size <- layout_config$indent_size %||% 2
+  max_visible_rows <- layout_config$max_visible_rows %||% 20
+  y_scroll_position <- layout_config$y_scroll_position  # Can be NULL
+  yaxis_label_width <- layout_config$yaxis_label_width %||% 300
+  yaxis_label_max_chars <- layout_config$yaxis_label_max_chars  # Can be NULL
+
   # ============================================
   # 2. BUILD WBS HIERARCHY
   # ============================================
@@ -277,27 +717,34 @@ Ganttify <- function(
       end = wbs_df$End_Date[wbs_df$ID == wbs_id]
     )))
     
-    # Add activities for this WBS
-    wbs_activities <- activities_df[activities_df$WBS_ID == wbs_id, ]
-    if (nrow(wbs_activities) > 0) {
-      for (j in 1:nrow(wbs_activities)) {
-        activity_item <- list(
-          type = "Activity",
-          id = wbs_activities$Activity_ID[j],
-          name = wbs_activities$Activity_Name[j],
-          wbs_id = wbs_id,
-          level = wbs_df$Level[wbs_df$ID == wbs_id] + 1,
-          start = wbs_activities$Start_Date[j],
-          end = wbs_activities$End_Date[j]
-        )
+    # Add activities for this WBS (only if show_activities is TRUE)
+    if (show_activities) {
+      wbs_activities <- activities_df[activities_df$WBS_ID == wbs_id, ]
+      if (nrow(wbs_activities) > 0) {
+        for (j in 1:nrow(wbs_activities)) {
+          activity_item <- list(
+            type = "Activity",
+            id = wbs_activities$Activity_ID[j],
+            name = wbs_activities$Activity_Name[j],
+            wbs_id = wbs_id,
+            level = wbs_df$Level[wbs_df$ID == wbs_id] + 1,
+            start = wbs_activities$Start_Date[j],
+            end = wbs_activities$End_Date[j]
+          )
 
-        # Add actual dates if they exist
-        if ("Start_Date_Actual" %in% colnames(wbs_activities)) {
-          activity_item$start_actual <- wbs_activities$Start_Date_Actual[j]
-          activity_item$end_actual <- wbs_activities$End_Date_Actual[j]
+          # Add actual dates if they exist
+          if ("Start_Date_Actual" %in% colnames(wbs_activities)) {
+            activity_item$start_actual <- wbs_activities$Start_Date_Actual[j]
+            activity_item$end_actual <- wbs_activities$End_Date_Actual[j]
+          }
+
+          # Add color attribute if using attribute mode
+          if (activity_color_mode == "attribute" && !is.null(activity_color_column)) {
+            activity_item$color_attribute <- wbs_activities[[activity_color_column]][j]
+          }
+
+          result <- c(result, list(activity_item))
         }
-
-        result <- c(result, list(activity_item))
       }
     }
     
@@ -335,6 +782,7 @@ Ganttify <- function(
     level = numeric(),
     id = character(),
     wbs_id = character(),
+    color_attribute = character(),  # For attribute-based coloring
     stringsAsFactors = FALSE
   )
   
@@ -343,15 +791,46 @@ Ganttify <- function(
     for (item in display_order) {
       # Create indentation using non-breaking spaces
       indent <- paste(rep("\u00A0", item$level * indent_size), collapse = "")
-      
+
       if (item$type == "WBS") {
-        # WBS labels - just the name (will be bolded in HTML)
-        label <- paste0(indent, item$name)
-        label_html <- paste0(indent, "<b>", item$name, "</b>")
+        # WBS labels - format using template
+        duration <- if (!is.na(item$start) && !is.na(item$end)) {
+          as.numeric(item$end - item$start) + 1
+        } else {
+          NA
+        }
+
+        label_text <- format_label(wbs_label_template, list(
+          name = item$name,
+          id = item$id,
+          start = item$start,
+          end = item$end,
+          duration = duration
+        ))
+
+        label <- truncate_label(paste0(indent, label_text), yaxis_label_max_chars)
+        label_html <- truncate_label(paste0(indent, "<b>", label_text, "</b>"), yaxis_label_max_chars, preserve_html = TRUE)
       } else {
-        # Activity labels - with bullet symbol
-        label <- paste0(indent, "\u2022 ", item$name)
-        label_html <- paste0(indent, "\u2022 ", item$name)
+        # Activity labels - format using template with bullet symbol
+        duration <- if (!is.na(item$start) && !is.na(item$end)) {
+          as.numeric(item$end - item$start) + 1
+        } else {
+          NA
+        }
+
+        label_text <- format_label(activity_label_template, list(
+          name = item$name,
+          id = item$id,
+          start = item$start,
+          end = item$end,
+          start_actual = if (!is.null(item$start_actual)) item$start_actual else NA,
+          end_actual = if (!is.null(item$end_actual)) item$end_actual else NA,
+          duration = duration,
+          wbs_id = item$wbs_id
+        ))
+
+        label <- truncate_label(paste0(indent, "\u2022 ", label_text), yaxis_label_max_chars)
+        label_html <- truncate_label(paste0(indent, "\u2022 ", label_text), yaxis_label_max_chars)
       }
       
       plot_data <- rbind(plot_data, data.frame(
@@ -366,6 +845,7 @@ Ganttify <- function(
         level = item$level,
         id = item$id,
         wbs_id = ifelse(item$type == "Activity", item$wbs_id, item$id),
+        color_attribute = if (!is.null(item$color_attribute)) as.character(item$color_attribute) else "",
         stringsAsFactors = FALSE
       ))
       y_pos <- y_pos - 1
@@ -437,18 +917,30 @@ Ganttify <- function(
     if (nrow(wbs_data) > 0) {
       for (i in 1:nrow(wbs_data)) {
         wbs_id <- wbs_data$wbs_id[i]
-        bar_color <- if (!is.null(wbs_colors) && wbs_id %in% names(wbs_colors)) {
-          wbs_colors[[wbs_id]]
+
+        # Determine WBS bar color based on activity color mode
+        if (activity_color_mode == "wbs") {
+          # Use WBS-specific colors (original behavior)
+          bar_color <- if (!is.null(wbs_colors) && wbs_id %in% names(wbs_colors)) {
+            wbs_colors[[wbs_id]]
+          } else {
+            "#95A5A6"
+          }
         } else {
-          "#95A5A6"
+          # Use uniform WBS color for uniform or attribute modes
+          bar_color <- uniform_wbs_color
         }
         
         # Add the bar line (without text)
+        # Generate intermediate points for full hover coverage
+        hover_x <- generate_hover_points(wbs_data$start[i], wbs_data$end[i])
+        hover_y <- rep(wbs_data$y_position[i], length(hover_x))
+
         fig <- fig %>% add_trace(
           type = "scatter",
           mode = "lines",
-          x = c(wbs_data$start[i], wbs_data$end[i]),
-          y = c(wbs_data$y_position[i], wbs_data$y_position[i]),
+          x = hover_x,
+          y = hover_y,
           line = list(color = bar_color, width = 5),
           opacity = wbs_opacity,
           name = "WBS",
@@ -465,10 +957,20 @@ Ganttify <- function(
         
         # Add text annotation at the END of the bar if requested
         if (show_wbs_names_on_bars) {
+          # Format bar label using template
+          duration <- as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1
+          bar_label_text <- format_label(wbs_bar_label_template, list(
+            name = wbs_structure$Name[wbs_structure$ID == wbs_id],
+            id = wbs_id,
+            start = wbs_data$start[i],
+            end = wbs_data$end[i],
+            duration = duration
+          ))
+
           text_annotations <- c(text_annotations, list(list(
             x = wbs_data$end[i],
             y = wbs_data$y_position[i],
-            text = gsub("\u00A0", "", wbs_data$y_label[i]),
+            text = bar_label_text,
             xanchor = "left",
             xshift = 5,
             showarrow = FALSE,
@@ -479,13 +981,32 @@ Ganttify <- function(
     }
     
     # Add activity bars (constant thickness lines or stacked planned/actual)
-    if (nrow(activity_data) > 0) {
+    if (show_activities && nrow(activity_data) > 0) {
       for (i in 1:nrow(activity_data)) {
         wbs_id <- activity_data$wbs_id[i]
-        bar_color <- if (!is.null(wbs_colors) && wbs_id %in% names(wbs_colors)) {
-          wbs_colors[[wbs_id]]
+
+        # Determine activity bar color based on mode
+        if (activity_color_mode == "wbs") {
+          # Inherit color from WBS (original behavior)
+          bar_color <- if (!is.null(wbs_colors) && wbs_id %in% names(wbs_colors)) {
+            wbs_colors[[wbs_id]]
+          } else {
+            "#3498DB"
+          }
+        } else if (activity_color_mode == "uniform") {
+          # Use uniform activity color
+          bar_color <- uniform_activity_color
+        } else if (activity_color_mode == "attribute") {
+          # Color by attribute value
+          attr_value <- activity_data$color_attribute[i]
+          if (attr_value != "" && attr_value %in% names(activity_color_mapping)) {
+            bar_color <- activity_color_mapping[[attr_value]]
+          } else {
+            # Default color if attribute value not found in mapping
+            bar_color <- "#95A5A6"  # Gray
+          }
         } else {
-          "#3498DB"
+          bar_color <- "#3498DB"  # Fallback
         }
 
         # Determine if activity should be dimmed
@@ -506,11 +1027,15 @@ Ganttify <- function(
           variance_days <- actual_duration - planned_duration
 
           # Planned bar (upper half)
+          # Generate intermediate points for full hover coverage
+          hover_x_planned <- generate_hover_points(activity_data$start[i], activity_data$end[i])
+          hover_y_planned <- rep(activity_data$y_position[i] + 0.2, length(hover_x_planned))
+
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
-            x = c(activity_data$start[i], activity_data$end[i]),
-            y = c(activity_data$y_position[i] + 0.2, activity_data$y_position[i] + 0.2),
+            x = hover_x_planned,
+            y = hover_y_planned,
             line = list(color = bar_color, width = 10),
             opacity = activity_opacity,
             name = "Planned",
@@ -533,11 +1058,15 @@ Ganttify <- function(
 
           # Actual bar (lower half) with diagonal stripe effect
           # Base actual bar
+          # Generate intermediate points for full hover coverage
+          hover_x_actual <- generate_hover_points(activity_data$start_actual[i], activity_data$end_actual[i])
+          hover_y_actual <- rep(activity_data$y_position[i] - 0.2, length(hover_x_actual))
+
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
-            x = c(activity_data$start_actual[i], activity_data$end_actual[i]),
-            y = c(activity_data$y_position[i] - 0.2, activity_data$y_position[i] - 0.2),
+            x = hover_x_actual,
+            y = hover_y_actual,
             line = list(color = bar_color, width = 10),
             opacity = activity_opacity * 0.4,  # Lighter background
             name = "Actual",
@@ -568,11 +1097,15 @@ Ganttify <- function(
 
         } else {
           # SINGLE BAR: Only planned dates (original behavior)
+          # Generate intermediate points for full hover coverage
+          hover_x <- generate_hover_points(activity_data$start[i], activity_data$end[i])
+          hover_y <- rep(activity_data$y_position[i], length(hover_x))
+
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
-            x = c(activity_data$start[i], activity_data$end[i]),
-            y = c(activity_data$y_position[i], activity_data$y_position[i]),
+            x = hover_x,
+            y = hover_y,
             line = list(color = bar_color, width = 20),
             opacity = activity_opacity,
             name = "Activity",
@@ -590,10 +1123,25 @@ Ganttify <- function(
 
         # Add text annotation at the END of the bar if requested
         if (show_activity_names_on_bars) {
+          # Get activity details from the original activities dataframe
+          activity_row <- activities[activities$Activity_ID == activity_data$id[i], ]
+
+          duration <- as.numeric(activity_data$end[i] - activity_data$start[i]) + 1
+          bar_label_text <- format_label(activity_bar_label_template, list(
+            name = activity_row$Activity_Name,
+            id = activity_row$Activity_ID,
+            start = activity_data$start[i],
+            end = activity_data$end[i],
+            start_actual = activity_data$start_actual[i],
+            end_actual = activity_data$end_actual[i],
+            duration = duration,
+            wbs_id = activity_data$wbs_id[i]
+          ))
+
           text_annotations <- c(text_annotations, list(list(
-            x = if (has_actuals) max(activity_data$end[i], activity_data$end_actual[i]) else activity_data$end[i],
+            x = if (has_actuals) max(activity_data$end[i], activity_data$end_actual[i], na.rm = TRUE) else activity_data$end[i],
             y = activity_data$y_position[i],
-            text = gsub("\u00A0", "", activity_data$y_label[i]),
+            text = bar_label_text,
             xanchor = "left",
             xshift = 5,
             showarrow = FALSE,
@@ -605,30 +1153,76 @@ Ganttify <- function(
   }
   
   # ============================================
-  # 10A. ADD TODAY'S DATE LINE (OPTIONAL)
+  # 10. ADD MILESTONE LINES (OPTIONAL)
   # ============================================
-  
-  if (show_today_line) {
-    # Only show the line if today falls within the plot range
-    if (today_date >= plot_min_date && today_date <= plot_max_date) {
-      fig <- fig %>% add_trace(
-        type = "scatter",
-        mode = "lines",
-        x = c(today_date, today_date),
-        y = c(y_range_min, y_range_max),
-        line = list(
-          color = "red",
-          width = 2,
-          dash = "dash"
-        ),
-        name = "Today",
-        showlegend = TRUE,
-        hoverinfo = "text",
-        hovertext = paste0("<b>Today</b><br>", format(today_date, "%Y-%m-%d"))
-      )
+
+  if (!is.null(milestone_data)) {
+    for (i in 1:nrow(milestone_data)) {
+      milestone_date <- milestone_data$date[i]
+
+      # Only show the line if it falls within the plot range
+      if (milestone_date >= plot_min_date && milestone_date <= plot_max_date) {
+        # Add the vertical line
+        fig <- fig %>% add_trace(
+          type = "scatter",
+          mode = "lines",
+          x = c(milestone_date, milestone_date),
+          y = c(y_range_min, y_range_max),
+          line = list(
+            color = milestone_data$color[i],
+            width = milestone_data$width[i],
+            dash = milestone_data$dash[i]
+          ),
+          name = milestone_data$label[i],
+          showlegend = FALSE,
+          hoverinfo = "text",
+          hovertext = paste0(
+            "<b>", milestone_data$label[i], "</b><br>",
+            "Date: ", format(milestone_date, "%Y-%m-%d")
+          )
+        )
+
+        # Determine y position for label based on label_position
+        label_y_position <- switch(
+          milestone_data$label_position[i],
+          "top" = y_range_max,
+          "middle" = (y_range_min + y_range_max) / 2,
+          "bottom" = y_range_min,
+          y_range_max  # default to top
+        )
+
+        # Determine vertical alignment based on position
+        label_yanchor <- switch(
+          milestone_data$label_position[i],
+          "top" = "bottom",
+          "middle" = "middle",
+          "bottom" = "top",
+          "bottom"  # default
+        )
+
+        # Add text annotation for the milestone label
+        text_annotations <- c(text_annotations, list(list(
+          x = milestone_date,
+          y = label_y_position,
+          text = milestone_data$label[i],
+          xanchor = "center",
+          yanchor = label_yanchor,
+          yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+          showarrow = FALSE,
+          font = list(
+            size = 10,
+            color = milestone_data$color[i],
+            family = "Arial, sans-serif"
+          ),
+          bgcolor = "rgba(255, 255, 255, 0.8)",
+          bordercolor = milestone_data$color[i],
+          borderwidth = 1,
+          borderpad = 3
+        )))
+      }
     }
   }
-  
+
   # ============================================
   # 11. CONFIGURE LAYOUT WITH Y-AXIS SCROLLING
   # ============================================
@@ -659,26 +1253,11 @@ Ganttify <- function(
       tickangle = 0,
       fixedrange = FALSE
     ),
-    shapes = if (show_today_line) {
-      list(
-        list(
-          type = "line",
-          x0 = today_date,
-          x1 = today_date,
-          y0 = 0,
-          y1 = 1,
-          yref = "paper",
-          line = list(color = "red", width = 2, dash = "dash")
-        )
-      )
-    } else {
-      list()
-    },
     annotations = text_annotations,
     hovermode = "closest",
     plot_bgcolor = "white",  # Changed to white for better contrast with alternating backgrounds
     paper_bgcolor = "white",
-    margin = list(l = 300, r = 50, t = 80, b = 80),
+    margin = list(l = yaxis_label_width, r = 50, t = 80, b = 80),
     dragmode = "pan"
   )
   
