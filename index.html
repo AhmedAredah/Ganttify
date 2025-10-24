@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.4</span>
       </span>
     </div>
 
@@ -279,6 +279,15 @@
 <span>    yaxis_label_width <span class="op">=</span> <span class="fl">200</span>,</span>
 <span>    yaxis_label_max_chars <span class="op">=</span> <span class="fl">25</span></span>
 <span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Control hover popup width with text wrapping</span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  layout_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    hover_popup_max_chars <span class="op">=</span> <span class="fl">30</span>  <span class="co"># Wrap long text in popups at 30 chars</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -365,7 +374,7 @@
 <li>
 <code>bar_config</code>: List with bar styling (opacity, height, dim_opacity, dim_past_activities)</li>
 <li>
-<code>layout_config</code>: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars)</li>
+<code>layout_config</code>: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars)</li>
 </ul>
 </div>
 <div class="section level3">
