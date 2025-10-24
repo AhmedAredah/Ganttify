@@ -817,6 +817,7 @@ Ganttify <- function(
     y_position = numeric(),
     y_label = character(),
     y_label_html = character(),  # HTML version with bold for WBS
+    y_label_full = character(),  # Untruncated version for hover popups
     start = as.Date(character()),
     end = as.Date(character()),
     start_actual = as.Date(character()),
@@ -853,6 +854,7 @@ Ganttify <- function(
 
         label <- truncate_label(paste0(indent, label_text), yaxis_label_max_chars)
         label_html <- truncate_label(paste0(indent, "<b>", label_text, "</b>"), yaxis_label_max_chars, preserve_html = TRUE)
+        label_full <- paste0(indent, label_text)  # Store untruncated for hover
       } else {
         # Activity labels - format using template with bullet symbol
         duration <- if (!is.na(item$start) && !is.na(item$end)) {
@@ -874,12 +876,14 @@ Ganttify <- function(
 
         label <- truncate_label(paste0(indent, "\u2022 ", label_text), yaxis_label_max_chars)
         label_html <- truncate_label(paste0(indent, "\u2022 ", label_text), yaxis_label_max_chars)
+        label_full <- paste0(indent, "\u2022 ", label_text)  # Store untruncated for hover
       }
-      
+
       plot_data <- rbind(plot_data, data.frame(
         y_position = y_pos,
         y_label = label,
         y_label_html = label_html,
+        y_label_full = label_full,
         start = item$start,
         end = item$end,
         start_actual = if (!is.null(item$start_actual)) item$start_actual else as.Date(NA),
@@ -990,7 +994,7 @@ Ganttify <- function(
           showlegend = FALSE,
           hoverinfo = "text",
           hovertext = paste0(
-            "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label[i]), hover_popup_max_chars), "</b><br>",
+            "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
             "Type: WBS<br>",
             "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
             "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
@@ -1085,7 +1089,7 @@ Ganttify <- function(
             showlegend = FALSE,
             hoverinfo = "text",
             hovertext = paste0(
-              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label[i]), hover_popup_max_chars), "</b><br>",
+              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
               "Type: Activity<br><br>",
               "<b>Planned:</b><br>",
               "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
@@ -1155,7 +1159,7 @@ Ganttify <- function(
             showlegend = FALSE,
             hoverinfo = "text",
             hovertext = paste0(
-              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label[i]), hover_popup_max_chars), "</b><br>",
+              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
               "Type: Activity<br>",
               "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
               "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
