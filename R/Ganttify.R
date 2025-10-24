@@ -4,6 +4,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom rlang .data
 #' @importFrom stats setNames
+#' @importFrom utils tail
 NULL
 
 # ============================================
@@ -75,13 +76,13 @@ NULL
 #'     \item activity: List with yaxis (template for y-axis labels) and bar (template for bar labels)
 #'     \item wbs: List with yaxis and bar templates
 #'   }
-#'   Available placeholders for activity: {name}, {id}, {start}, {end}, {start_actual}, {end_actual}, {duration}, {wbs_id}
-#'   Available placeholders for wbs: {name}, {id}, {start}, {end}, {duration}
+#'   Available placeholders for activity: \{name\}, \{id\}, \{start\}, \{end\}, \{start_actual\}, \{end_actual\}, \{duration\}, \{wbs_id\}
+#'   Available placeholders for wbs: \{name\}, \{id\}, \{start\}, \{end\}, \{duration\}
 #'   Example: \preformatted{list(
 #'     activity = list(yaxis = "{name} ({start} - {end})", bar = "{name}"),
 #'     wbs = list(yaxis = "{name}", bar = "{name}")
 #'   )}
-#'   If NULL, uses "{name}" for all labels. Default NULL.
+#'   If NULL, uses "\{name\}" for all labels. Default NULL.
 #' @param bar_config List or NULL. Styling configuration for bars. Structure:
 #'   \itemize{
 #'     \item wbs: List with opacity (0-1) and height (numeric)
