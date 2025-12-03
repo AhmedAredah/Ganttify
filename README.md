@@ -15,6 +15,7 @@ Create interactive Primavera-style Gantt charts with Work Breakdown Structure (W
 - **Scrollable Views**: Handle large projects with vertical scrolling
 - **Milestone Lines**: Add vertical date markers with custom labels (including "today" line)
 - **Past Activity Dimming**: Optionally dim completed activities for better focus (via bar_config)
+- **Dynamic Minimum Bar Width**: Automatically ensures short-duration activities remain visible at any zoom level by dynamically adjusting bar width
 - **Flexible Display**: Show/hide WBS and activity names on bars (via display_config)
 - **Custom Label Templates**: Customize labels with placeholders for dates, duration, IDs (via label_config)
 - **Planned vs Actual**: Show both planned and actual dates with visual distinction
