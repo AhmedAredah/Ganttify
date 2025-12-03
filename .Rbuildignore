@@ -5,5 +5,6 @@
 ^\.git$
 ^\.github$
 ^LICENSE\.md$
+^LICENSE$
 ^README\.Rmd$
 ^\.gitignore$
