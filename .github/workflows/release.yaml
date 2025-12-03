@@ -6,6 +6,13 @@ on:
       - main
     paths:
       - 'DESCRIPTION'
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: 'Run release even if version has not changed'
+        required: false
+        default: 'false'
+        type: boolean
 
 permissions:
   contents: write
@@ -28,27 +35,33 @@ jobs:
         run: |
           # Get current version from DESCRIPTION
           NEW_VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: //')
-
+      
           # Get previous version from last commit
           git checkout HEAD~1 -- DESCRIPTION 2>/dev/null || true
           OLD_VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: //' || echo "0.0.0")
           git checkout HEAD -- DESCRIPTION
-
+      
           echo "Old version: $OLD_VERSION"
           echo "New version: $NEW_VERSION"
-
+      
+          # Always output new_version so the release job can use it
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+      
           if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
             echo "should_release=true" >> $GITHUB_OUTPUT
-            echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "✅ Version changed from $OLD_VERSION to $NEW_VERSION - will create release"
           else
             echo "should_release=false" >> $GITHUB_OUTPUT
-            echo "ℹ️  Version unchanged - skipping release"
+            echo "ℹ️  Version unchanged - skipping auto release (unless forced manually)"
           fi
+
 
   release:
     needs: check-version
-    # if: needs.check-version.outputs.should_release == 'true'
+    if: needs.check-version.outputs.should_release == 'true' || (
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.force_release == 'true'
+      )
     runs-on: ubuntu-latest
 
     steps:
@@ -60,8 +73,8 @@ jobs:
           VERSION="${{ needs.check-version.outputs.new_version }}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag "v$VERSION"
-          git push origin "v$VERSION"
+          git tag -f "v$VERSION"
+          git push origin -f "v$VERSION"
 
       - name: Setup R
         uses: r-lib/actions/setup-r@v2
