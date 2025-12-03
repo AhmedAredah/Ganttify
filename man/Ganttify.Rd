@@ -101,6 +101,8 @@ If NULL, uses default template for all labels. Default NULL.}
 }
 The dim_past_activities field controls whether activities that end before today are dimmed.
 When TRUE, completed activities use the dim_opacity value instead of the regular opacity.
+Note: Short-duration activities are automatically kept visible at any zoom level through
+dynamic bar width adjustment. The original dates are preserved in hover tooltips.
 Example: \preformatted{list(
   wbs = list(opacity = 0.3, height = 0.3),
   activity = list(opacity = 1.0, height = 0.8, dim_opacity = 0.3, dim_past_activities = FALSE)
