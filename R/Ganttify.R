@@ -92,6 +92,8 @@ NULL
 #'   }
 #'   The dim_past_activities field controls whether activities that end before today are dimmed.
 #'   When TRUE, completed activities use the dim_opacity value instead of the regular opacity.
+#'   Note: Short-duration activities are automatically kept visible at any zoom level through
+#'   dynamic bar width adjustment. The original dates are preserved in hover tooltips.
 #'   Example: \preformatted{list(
 #'     wbs = list(opacity = 0.3, height = 0.3),
 #'     activity = list(opacity = 1.0, height = 0.8, dim_opacity = 0.3, dim_past_activities = FALSE)
@@ -1027,7 +1029,12 @@ Ganttify <- function(
             "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
             "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
             "Duration: ", as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1, " days"
-          )
+          ),
+          customdata = list(list(
+            type = "wbs",
+            original_start = as.character(wbs_data$start[i]),
+            original_end = as.character(wbs_data$end[i])
+          ))
         )
         
         # Add text annotation at the END of the bar if requested
@@ -1101,11 +1108,14 @@ Ganttify <- function(
           actual_duration <- as.numeric(activity_data$end_actual[i] - activity_data$start_actual[i]) + 1
           variance_days <- actual_duration - planned_duration
 
-          # Planned bar (upper half)
-          # Generate intermediate points for full hover coverage
+          # Generate intermediate points for full hover coverage using original dates
+          # JavaScript will adjust dynamically on zoom
           hover_x_planned <- generate_hover_points(activity_data$start[i], activity_data$end[i])
           hover_y_planned <- rep(activity_data$y_position[i] + 0.2, length(hover_x_planned))
+          hover_x_actual <- generate_hover_points(activity_data$start_actual[i], activity_data$end_actual[i])
+          hover_y_actual <- rep(activity_data$y_position[i] - 0.2, length(hover_x_actual))
 
+          # Planned bar (upper half) - JavaScript will adjust dates dynamically on zoom
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
@@ -1128,15 +1138,15 @@ Ganttify <- function(
               "End: ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
               "Duration: ", actual_duration, " days<br>",
               "Variance: ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days"
-            )
+            ),
+            customdata = list(list(
+              type = "activity_planned",
+              original_start = as.character(activity_data$start[i]),
+              original_end = as.character(activity_data$end[i])
+            ))
           )
 
           # Actual bar (lower half) with diagonal stripe effect
-          # Base actual bar
-          # Generate intermediate points for full hover coverage
-          hover_x_actual <- generate_hover_points(activity_data$start_actual[i], activity_data$end_actual[i])
-          hover_y_actual <- rep(activity_data$y_position[i] - 0.2, length(hover_x_actual))
-
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
@@ -1146,10 +1156,16 @@ Ganttify <- function(
             opacity = activity_opacity * 0.4,  # Lighter background
             name = "Actual",
             showlegend = FALSE,
-            hoverinfo = "skip"
+            hoverinfo = "skip",
+            customdata = list(list(
+              type = "activity_actual",
+              original_start = as.character(activity_data$start_actual[i]),
+              original_end = as.character(activity_data$end_actual[i])
+            ))
           )
 
           # Create diagonal stripe pattern using multiple thin lines
+          # Note: Stripes don't need customdata - they're decorative and won't be resized
           num_stripes <- 8
           bar_duration <- as.numeric(activity_data$end_actual[i] - activity_data$start_actual[i])
           if (bar_duration > 0) {
@@ -1171,11 +1187,12 @@ Ganttify <- function(
           }
 
         } else {
-          # SINGLE BAR: Only planned dates (original behavior)
+          # SINGLE BAR: Only planned dates
           # Generate intermediate points for full hover coverage
           hover_x <- generate_hover_points(activity_data$start[i], activity_data$end[i])
           hover_y <- rep(activity_data$y_position[i], length(hover_x))
 
+          # Add the bar with original dates - JavaScript will adjust dynamically on zoom
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
@@ -1192,7 +1209,12 @@ Ganttify <- function(
               "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
               "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
               "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days"
-            )
+            ),
+            customdata = list(list(
+              type = "activity",
+              original_start = as.character(activity_data$start[i]),
+              original_end = as.character(activity_data$end[i])
+            ))
           )
         }
 
@@ -1572,19 +1594,125 @@ Ganttify <- function(
         }
         
         // Only update if something changed
-        var needsUpdate = el.layout.xaxis.tickformat !== newFormat || 
+        var needsUpdate = el.layout.xaxis.tickformat !== newFormat ||
                          el.layout.xaxis.tickmode !== tickMode;
-        
+
         if (needsUpdate || true) {  // Always update to refresh backgrounds
           Plotly.relayout(el, updateObj);
         }
       }
-      
+
+      // ============================================
+      // DYNAMIC BAR WIDTH FUNCTIONS
+      // ============================================
+
+      // Calculate minimum bar width and return adjusted dates
+      function ensureMinBarWidth(originalStart, originalEnd, rangeMin, rangeMax, minWidthPercent) {
+        var totalRange = rangeMax.getTime() - rangeMin.getTime();
+        var duration = originalEnd.getTime() - originalStart.getTime();
+        var minDuration = totalRange * (minWidthPercent / 100);
+
+        if (duration >= minDuration) {
+          return { start: originalStart, end: originalEnd };
+        }
+
+        var midDate = new Date((originalStart.getTime() + originalEnd.getTime()) / 2);
+        var halfMin = minDuration / 2;
+        return {
+          start: new Date(midDate.getTime() - halfMin),
+          end: new Date(midDate.getTime() + halfMin)
+        };
+      }
+
+      // Generate hover points for a date range (mirrors R function)
+      function generateHoverPoints(startDate, endDate) {
+        var points = [];
+        var duration = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24); // days
+        var step;
+
+        if (duration <= 0) {
+          return [startDate.toISOString().split('T')[0], startDate.toISOString().split('T')[0]];
+        } else if (duration <= 7) {
+          step = 1;
+        } else if (duration <= 90) {
+          step = 3;
+        } else if (duration <= 365) {
+          step = 7;
+        } else {
+          step = 14;
+        }
+
+        var current = new Date(startDate);
+        while (current <= endDate) {
+          points.push(current.toISOString().split('T')[0]);
+          current.setDate(current.getDate() + step);
+        }
+        if (points.length === 0 || points[points.length - 1] !== endDate.toISOString().split('T')[0]) {
+          points.push(endDate.toISOString().split('T')[0]);
+        }
+        return points;
+      }
+
+      // Update all bar traces based on current x-axis range
+      function updateBarWidths(el) {
+        if (!el.layout || !el.layout.xaxis || !el.layout.xaxis.range) {
+          return;
+        }
+
+        var xRange = el.layout.xaxis.range;
+        var rangeMin = new Date(xRange[0]);
+        var rangeMax = new Date(xRange[1]);
+        var minWidthPercent = 0.3;
+
+        var indicesToUpdate = [];
+        var xUpdates = [];
+        var yUpdates = [];
+
+        el.data.forEach(function(trace, idx) {
+          if (!trace.customdata || !trace.customdata[0]) return;
+          var meta = trace.customdata[0];
+          if (!meta.type || !meta.original_start || !meta.original_end) return;
+
+          var yVal = trace.y[0];
+          var origStart = new Date(meta.original_start);
+          var origEnd = new Date(meta.original_end);
+          var adjusted = ensureMinBarWidth(origStart, origEnd, rangeMin, rangeMax, minWidthPercent);
+          var newX = generateHoverPoints(adjusted.start, adjusted.end);
+
+          var newY = [];
+          for (var i = 0; i < newX.length; i++) {
+            newY.push(yVal);
+          }
+
+          indicesToUpdate.push(idx);
+          xUpdates.push(newX);
+          yUpdates.push(newY);
+        });
+
+        if (indicesToUpdate.length > 0) {
+          Plotly.restyle(el, { x: xUpdates, y: yUpdates }, indicesToUpdate);
+        }
+      }
+
+      // Debounce function to avoid excessive updates
+      var updateBarWidthsDebounced = (function() {
+        var timeout;
+        return function() {
+          clearTimeout(timeout);
+          timeout = setTimeout(function() {
+            updateBarWidths(el);
+          }, 100);
+        };
+      })();
+
       // Apply alignment on initial render
       setTimeout(alignYAxisLabels, 100);
-      
+
       // Apply initial date format
       setTimeout(updateDateFormat, 150);
+
+      // Apply initial bar width adjustment (after date format is applied and relayout completes)
+      setTimeout(function() { updateBarWidths(el); }, 500);
       
       // Re-apply alignment after every plot update (pan, zoom, etc.)
       el.on('plotly_afterplot', alignYAxisLabels);
@@ -1599,9 +1727,11 @@ Ganttify <- function(
       
       // Intercept relayout events to prevent y-axis zoom
       el.on('plotly_relayout', function(eventData) {
-        // Update date format when x-axis range changes
+        // Update date format and bar widths when x-axis range changes
         if (eventData['xaxis.range[0]'] !== undefined || eventData['xaxis.range[1]'] !== undefined || eventData['xaxis.range'] !== undefined) {
           setTimeout(updateDateFormat, 50);
+          // Use debounced version to avoid excessive updates during rapid zoom/pan
+          updateBarWidthsDebounced();
         }
         
         // Check if y-axis range is being changed
