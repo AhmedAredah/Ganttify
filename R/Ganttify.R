@@ -1013,6 +1013,16 @@ Ganttify <- function(
         hover_x <- generate_hover_points(wbs_data$start[i], wbs_data$end[i])
         hover_y <- rep(wbs_data$y_position[i], length(hover_x))
 
+        # Create hover content
+        hover_content <- paste0(
+          "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
+          "Type: WBS<br>",
+          "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
+          "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
+          "Duration: ", as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1, " days",
+          "<extra></extra>"
+        )
+
         fig <- fig %>% add_trace(
           type = "scatter",
           mode = "lines",
@@ -1022,14 +1032,7 @@ Ganttify <- function(
           opacity = wbs_opacity,
           name = "WBS",
           showlegend = FALSE,
-          hoverinfo = "text",
-          hovertext = paste0(
-            "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
-            "Type: WBS<br>",
-            "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
-            "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
-            "Duration: ", as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1, " days"
-          ),
+          hovertemplate = hover_content,
           customdata = list(list(
             type = "wbs",
             original_start = as.character(wbs_data$start[i]),
@@ -1115,6 +1118,22 @@ Ganttify <- function(
           hover_x_actual <- generate_hover_points(activity_data$start_actual[i], activity_data$end_actual[i])
           hover_y_actual <- rep(activity_data$y_position[i] - 0.2, length(hover_x_actual))
 
+          # Create hover content for planned bar
+          hover_content_planned <- paste0(
+            "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
+            "Type: Activity<br><br>",
+            "<b>Planned:</b><br>",
+            "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
+            "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
+            "Duration: ", planned_duration, " days<br><br>",
+            "<b>Actual:</b><br>",
+            "Start: ", format(activity_data$start_actual[i], "%Y-%m-%d"), "<br>",
+            "End: ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
+            "Duration: ", actual_duration, " days<br>",
+            "Variance: ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days",
+            "<extra></extra>"
+          )
+
           # Planned bar (upper half) - JavaScript will adjust dates dynamically on zoom
           fig <- fig %>% add_trace(
             type = "scatter",
@@ -1125,20 +1144,7 @@ Ganttify <- function(
             opacity = activity_opacity,
             name = "Planned",
             showlegend = FALSE,
-            hoverinfo = "text",
-            hovertext = paste0(
-              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
-              "Type: Activity<br><br>",
-              "<b>Planned:</b><br>",
-              "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
-              "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
-              "Duration: ", planned_duration, " days<br><br>",
-              "<b>Actual:</b><br>",
-              "Start: ", format(activity_data$start_actual[i], "%Y-%m-%d"), "<br>",
-              "End: ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
-              "Duration: ", actual_duration, " days<br>",
-              "Variance: ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days"
-            ),
+            hovertemplate = hover_content_planned,
             customdata = list(list(
               type = "activity_planned",
               original_start = as.character(activity_data$start[i]),
@@ -1192,6 +1198,16 @@ Ganttify <- function(
           hover_x <- generate_hover_points(activity_data$start[i], activity_data$end[i])
           hover_y <- rep(activity_data$y_position[i], length(hover_x))
 
+          # Create hover content
+          hover_content <- paste0(
+            "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
+            "Type: Activity<br>",
+            "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
+            "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
+            "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days",
+            "<extra></extra>"
+          )
+
           # Add the bar with original dates - JavaScript will adjust dynamically on zoom
           fig <- fig %>% add_trace(
             type = "scatter",
@@ -1202,14 +1218,7 @@ Ganttify <- function(
             opacity = activity_opacity,
             name = "Activity",
             showlegend = FALSE,
-            hoverinfo = "text",
-            hovertext = paste0(
-              "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
-              "Type: Activity<br>",
-              "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
-              "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
-              "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days"
-            ),
+            hovertemplate = hover_content,
             customdata = list(list(
               type = "activity",
               original_start = as.character(activity_data$start[i]),
