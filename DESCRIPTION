@@ -7,7 +7,7 @@ Authors@R: person("Ahmed", "Aredah", email = "Ahmed.Aredah@gmail.com",
 Description: Create Primavera-style interactive Gantt charts with Work Breakdown
     Structure (WBS) hierarchy and activities. Features include color-coded WBS
     items, indented labels, scrollable views for large projects, dynamic date
-    formatting, and the ability to dim past activities. Built on top of plotly
+    formatting, and the ability to dim past activities. Built on top of 'plotly'
     for interactive visualizations.
 License: GPL-3
 Encoding: UTF-8
