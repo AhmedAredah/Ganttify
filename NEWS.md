@@ -1,3 +1,16 @@
+# ganttify 0.1.8
+
+## New Features
+
+* **Custom Tooltip Fields**: Added `tooltip_config` parameter to display custom columns from your data in hover tooltips. Specify which columns from `wbs_structure` and `activities` to show. Fields that don't exist or have empty/NA values are automatically hidden.
+
+```r
+tooltip_config = list(
+  wbs = c("Owner", "Budget"),
+  activity = c("Status", "Agency", "Priority")
+)
+```
+
 # ganttify 0.1.7
 
 ## New Features

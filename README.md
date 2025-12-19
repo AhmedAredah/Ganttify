@@ -18,6 +18,7 @@ Create interactive Primavera-style Gantt charts with Work Breakdown Structure (W
 - **Dynamic Minimum Bar Width**: Automatically ensures short-duration activities remain visible at any zoom level by dynamically adjusting bar width
 - **Flexible Display**: Show/hide WBS and activity names on bars (via display_config)
 - **Custom Label Templates**: Customize labels with placeholders for dates, duration, IDs (via label_config)
+- **Custom Tooltip Fields**: Add any column from your data to hover tooltips (via tooltip_config)
 - **Planned vs Actual**: Show both planned and actual dates with visual distinction
 - **Configuration-Based API**: Organized parameters into logical config objects for cleaner code
 
@@ -210,6 +211,24 @@ Ganttify(
     hover_popup_max_chars = 30  # Wrap long text in popups at 30 chars
   )
 )
+
+# Add custom fields to hover tooltips
+# First add custom columns to your data
+activities_extended <- test_project$activities
+activities_extended$Status <- c("On Track", "Delayed", "Complete", ...)
+activities_extended$Agency <- "TTI"
+
+wbs_extended <- test_project$wbs_structure
+wbs_extended$Owner <- "Project Manager"
+
+Ganttify(
+  wbs_structure = wbs_extended,
+  activities = activities_extended,
+  tooltip_config = list(
+    wbs = c("Owner"),
+    activity = c("Status", "Agency")
+  )
+)
 ```
 
 ## Data Structure
@@ -288,6 +307,7 @@ Key parameters for the `Ganttify()` function:
 - `label_config`: List with label templates for y-axis and bars (supports placeholders)
 - `bar_config`: List with bar styling (opacity, height, dim_opacity, dim_past_activities)
 - `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars)
+- `tooltip_config`: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities). Fields with NA/empty values are auto-hidden.
 
 ### Other Parameters
 - `milestone_lines`: Data frame with milestone dates and labels (use Sys.Date() for "today" line)

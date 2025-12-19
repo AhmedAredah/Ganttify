@@ -14,7 +14,8 @@ Ganttify(
   display_config = NULL,
   label_config = NULL,
   bar_config = NULL,
-  layout_config = NULL
+  layout_config = NULL,
+  tooltip_config = NULL
 )
 }
 \arguments{
@@ -129,6 +130,18 @@ Example: \preformatted{list(
   hover_popup_max_chars = 50
 )}
 If NULL, uses defaults shown above. Default NULL.}
+
+\item{tooltip_config}{List or NULL. Configuration for custom tooltip fields. Structure:
+\itemize{
+  \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips
+  \item activity: Character vector of column names from activities to display in activity tooltips
+}
+Fields that don't exist in the data or have NA/empty values will be automatically hidden.
+Example: \preformatted{list(
+  wbs = c("Owner", "Budget"),
+  activity = c("Status", "Agency", "Priority", "Notes")
+)}
+If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.}
 }
 \value{
 A plotly object containing the interactive Gantt chart. Can be displayed directly
@@ -230,6 +243,26 @@ chart <- Ganttify(
   layout_config = list(
     yaxis_label_width = 200,
     yaxis_label_max_chars = 25
+  )
+)
+chart
+
+# Custom tooltip fields (add extra columns to show in hover popups)
+# First add custom columns to your data
+activities_extended <- test_project$activities
+activities_extended$Status <- sample(c("On Track", "Delayed", "Complete"),
+                                      nrow(activities_extended), replace = TRUE)
+activities_extended$Agency <- "TTI"
+
+wbs_extended <- test_project$wbs_structure
+wbs_extended$Owner <- "Project Manager"
+
+chart <- Ganttify(
+  wbs_structure = wbs_extended,
+  activities = activities_extended,
+  tooltip_config = list(
+    wbs = c("Owner"),
+    activity = c("Status", "Agency")
   )
 )
 chart

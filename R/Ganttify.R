@@ -119,6 +119,17 @@ NULL
 #'     hover_popup_max_chars = 50
 #'   )}
 #'   If NULL, uses defaults shown above. Default NULL.
+#' @param tooltip_config List or NULL. Configuration for custom tooltip fields. Structure:
+#'   \itemize{
+#'     \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips
+#'     \item activity: Character vector of column names from activities to display in activity tooltips
+#'   }
+#'   Fields that don't exist in the data or have NA/empty values will be automatically hidden.
+#'   Example: \preformatted{list(
+#'     wbs = c("Owner", "Budget"),
+#'     activity = c("Status", "Agency", "Priority", "Notes")
+#'   )}
+#'   If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.
 #'
 #' @return A plotly object containing the interactive Gantt chart. Can be displayed directly
 #'   or saved using htmlwidgets::saveWidget().
@@ -217,6 +228,26 @@ NULL
 #'   )
 #' )
 #' chart
+#'
+#' # Custom tooltip fields (add extra columns to show in hover popups)
+#' # First add custom columns to your data
+#' activities_extended <- test_project$activities
+#' activities_extended$Status <- sample(c("On Track", "Delayed", "Complete"),
+#'                                       nrow(activities_extended), replace = TRUE)
+#' activities_extended$Agency <- "TTI"
+#'
+#' wbs_extended <- test_project$wbs_structure
+#' wbs_extended$Owner <- "Project Manager"
+#'
+#' chart <- Ganttify(
+#'   wbs_structure = wbs_extended,
+#'   activities = activities_extended,
+#'   tooltip_config = list(
+#'     wbs = c("Owner"),
+#'     activity = c("Status", "Agency")
+#'   )
+#' )
+#' chart
 #' }
 #'
 #' @export
@@ -230,7 +261,8 @@ Ganttify <- function(
     display_config = NULL,
     label_config = NULL,
     bar_config = NULL,
-    layout_config = NULL
+    layout_config = NULL,
+    tooltip_config = NULL
 ) {
   
   # ============================================
@@ -674,6 +706,72 @@ Ganttify <- function(
   hover_popup_max_chars <- layout_config$hover_popup_max_chars %||% 50
 
   # ============================================
+  # 1H. PARSE AND VALIDATE TOOLTIP CONFIG
+  # ============================================
+
+  # Set defaults if NULL
+  if (is.null(tooltip_config)) {
+    tooltip_config <- list(
+      wbs = character(0),
+      activity = character(0)
+    )
+  }
+
+  # Extract custom tooltip fields for WBS
+  tooltip_wbs_fields <- if (!is.null(tooltip_config$wbs)) {
+    as.character(tooltip_config$wbs)
+  } else {
+    character(0)
+  }
+
+  # Extract custom tooltip fields for activities
+  tooltip_activity_fields <- if (!is.null(tooltip_config$activity)) {
+    as.character(tooltip_config$activity)
+  } else {
+    character(0)
+  }
+
+  # Helper function to build custom tooltip entries
+  # Returns HTML string with field: value pairs, skipping missing/empty values
+ build_custom_tooltip <- function(data_row, fields, data_source, max_chars) {
+    if (length(fields) == 0) return("")
+
+    tooltip_parts <- character(0)
+
+    for (field in fields) {
+      # Check if field exists in data source
+      if (!field %in% colnames(data_source)) {
+        next
+      }
+
+      # Get the value
+      value <- data_row[[field]]
+
+      # Skip if value is NA, NULL, or empty string
+      if (is.null(value) || length(value) == 0) next
+      if (is.na(value)) next
+      if (is.character(value) && trimws(value) == "") next
+
+      # Format the value
+      if (inherits(value, "Date")) {
+        value <- format(value, "%Y-%m-%d")
+      } else {
+        value <- as.character(value)
+      }
+
+      # Wrap text if needed
+      wrapped_value <- wrap_text_for_hover(value, max_chars)
+
+      tooltip_parts <- c(tooltip_parts, paste0(field, ": ", wrapped_value))
+    }
+
+    if (length(tooltip_parts) == 0) return("")
+
+    # Join with line breaks and add a leading line break
+    return(paste0("<br>", paste(tooltip_parts, collapse = "<br>")))
+  }
+
+  # ============================================
   # 2. BUILD WBS HIERARCHY
   # ============================================
   
@@ -1014,12 +1112,17 @@ Ganttify <- function(
         hover_y <- rep(wbs_data$y_position[i], length(hover_x))
 
         # Create hover content
+        # Get WBS row for custom tooltip fields
+        wbs_row <- wbs_structure[wbs_structure$ID == wbs_id, ]
+        custom_tooltip_wbs <- build_custom_tooltip(wbs_row, tooltip_wbs_fields, wbs_structure, hover_popup_max_chars)
+
         hover_content <- paste0(
           "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
           "Type: WBS<br>",
           "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
           "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
           "Duration: ", as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1, " days",
+          custom_tooltip_wbs,
           "<extra></extra>"
         )
 
@@ -1119,6 +1222,10 @@ Ganttify <- function(
           hover_y_actual <- rep(activity_data$y_position[i] - 0.2, length(hover_x_actual))
 
           # Create hover content for planned bar
+          # Get activity row for custom tooltip fields
+          activity_row <- activities[activities$Activity_ID == activity_data$id[i], ]
+          custom_tooltip_activity <- build_custom_tooltip(activity_row, tooltip_activity_fields, activities, hover_popup_max_chars)
+
           hover_content_planned <- paste0(
             "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
             "Type: Activity<br><br>",
@@ -1131,6 +1238,7 @@ Ganttify <- function(
             "End: ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
             "Duration: ", actual_duration, " days<br>",
             "Variance: ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days",
+            custom_tooltip_activity,
             "<extra></extra>"
           )
 
@@ -1199,12 +1307,17 @@ Ganttify <- function(
           hover_y <- rep(activity_data$y_position[i], length(hover_x))
 
           # Create hover content
+          # Get activity row for custom tooltip fields
+          activity_row <- activities[activities$Activity_ID == activity_data$id[i], ]
+          custom_tooltip_activity <- build_custom_tooltip(activity_row, tooltip_activity_fields, activities, hover_popup_max_chars)
+
           hover_content <- paste0(
             "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
             "Type: Activity<br>",
             "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
             "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
             "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days",
+            custom_tooltip_activity,
             "<extra></extra>"
           )
 

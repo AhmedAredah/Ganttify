@@ -13,4 +13,4 @@ There are currently no downstream dependencies for this package.
 
 ## Notes
 
-This is a minor update that adds dynamic minimum bar width functionality to ensure short-duration activities remain visible at any zoom level.
+This is a minor update that adds the `tooltip_config` parameter, allowing users to display custom columns from their data in hover tooltips for both WBS items and activities.
