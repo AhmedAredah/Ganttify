@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.8</span>
       </span>
     </div>
 
@@ -48,7 +48,20 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.1.7" id="ganttify-017">ganttify 0.1.7<a class="anchor" aria-label="anchor" href="#ganttify-017"></a></h2>
+<h2 class="page-header" data-toc-text="0.1.8" id="ganttify-018">ganttify 0.1.8<a class="anchor" aria-label="anchor" href="#ganttify-018"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-1-8">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-8"></a></h3>
+<ul><li>
+<strong>Custom Tooltip Fields</strong>: Added <code>tooltip_config</code> parameter to display custom columns from your data in hover tooltips. Specify which columns from <code>wbs_structure</code> and <code>activities</code> to show. Fields that don’t exist or have empty/NA values are automatically hidden.</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">tooltip_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Owner"</span>, <span class="st">"Budget"</span><span class="op">)</span>,</span>
+<span>  activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Status"</span>, <span class="st">"Agency"</span>, <span class="st">"Priority"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.1.7" id="ganttify-017">ganttify 0.1.7<small>2025-12-04</small><a class="anchor" aria-label="anchor" href="#ganttify-017"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-1-7">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-7"></a></h3>
 <ul><li>

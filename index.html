@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.1.8</span>
       </span>
     </div>
 
@@ -96,6 +96,8 @@
 <li>
 <strong>Custom Label Templates</strong>: Customize labels with placeholders for dates, duration, IDs (via label_config)</li>
 <li>
+<strong>Custom Tooltip Fields</strong>: Add any column from your data to hover tooltips (via tooltip_config)</li>
+<li>
 <strong>Planned vs Actual</strong>: Show both planned and actual dates with visual distinction</li>
 <li>
 <strong>Configuration-Based API</strong>: Organized parameters into logical config objects for cleaner code</li>
@@ -118,7 +120,7 @@
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"devtools"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Install ganttify from GitHub</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"AhmedAredah/Ganttify"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"AhmedAredah/Ganttify"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -293,6 +295,24 @@
 <span>  layout_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    hover_popup_max_chars <span class="op">=</span> <span class="fl">30</span>  <span class="co"># Wrap long text in popups at 30 chars</span></span>
 <span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Add custom fields to hover tooltips</span></span>
+<span><span class="co"># First add custom columns to your data</span></span>
+<span><span class="va">activities_extended</span> <span class="op">&lt;-</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span></span>
+<span><span class="va">activities_extended</span><span class="op">$</span><span class="va">Status</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"On Track"</span>, <span class="st">"Delayed"</span>, <span class="st">"Complete"</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="va">activities_extended</span><span class="op">$</span><span class="va">Agency</span> <span class="op">&lt;-</span> <span class="st">"TTI"</span></span>
+<span></span>
+<span><span class="va">wbs_extended</span> <span class="op">&lt;-</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span></span>
+<span><span class="va">wbs_extended</span><span class="op">$</span><span class="va">Owner</span> <span class="op">&lt;-</span> <span class="st">"Project Manager"</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">wbs_extended</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">activities_extended</span>,</span>
+<span>  tooltip_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Owner"</span><span class="op">)</span>,</span>
+<span>    activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Status"</span>, <span class="st">"Agency"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -380,6 +400,8 @@
 <code>bar_config</code>: List with bar styling (opacity, height, dim_opacity, dim_past_activities)</li>
 <li>
 <code>layout_config</code>: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars)</li>
+<li>
+<code>tooltip_config</code>: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities). Fields with NA/empty values are auto-hidden.</li>
 </ul>
 </div>
 <div class="section level3">
