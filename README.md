@@ -4,6 +4,8 @@
 [![R-CMD-check](https://github.com/AhmedAredah/Ganttify/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/AhmedAredah/Ganttify/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
+[![](https://cranlogs.r-pkg.org/badges/grand-total/ganttify)](https://cran.r-project.org/package=ganttify)
+
 Create interactive Primavera-style Gantt charts with Work Breakdown Structure (WBS) hierarchy and activities. Built on top of plotly for rich, interactive visualizations.
 
 ## Features
