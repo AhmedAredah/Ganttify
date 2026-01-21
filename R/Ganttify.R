@@ -39,17 +39,32 @@ NULL
 #'   Default "Project Gantt Chart with WBS".
 #' @param x_range Character vector. Date range for x-axis zoom (e.g., c("2024-01-01", "2024-12-31")).
 #'   If NULL, shows full project range.
-#' @param milestone_lines Data frame or NULL. Optional milestone lines to display on the chart.
+#' @param milestone_lines Data frame or NULL. Optional milestone markers to display on the chart.
+#'   Supports both single-date vertical lines and date-range shaded areas.
 #'   If provided, must be a data frame with the following columns:
 #'   \itemize{
-#'     \item date (required): Date for the vertical line (character in MM/DD/YYYY format or Date object)
-#'     \item label (required): Text label to display on the line
-#'     \item color (optional): Line color (e.g., "red", "#FF0000"). Defaults to color palette if not provided.
-#'     \item dash (optional): Line style - "solid", "dash", "dot", or "dashdot". Default "dash".
-#'     \item width (optional): Line width in pixels. Default 2.
+#'     \item date (required): Either a single date (for vertical line) or a vector of 2 dates
+#'       (for shaded area). Use a list column to mix both types. Dates can be character
+#'       in MM/DD/YYYY format or Date objects.
+#'     \item label (required): Text label to display on the milestone
+#'     \item color (optional): Color for line or area (e.g., "red", "#FF0000"). Defaults to color palette.
+#'     \item dash (optional): Line style for single-date milestones - "solid", "dash", "dot", or "dashdot". Default "dash".
+#'     \item width (optional): Line width in pixels for single-date milestones. Default 2.
+#'     \item fill_opacity (optional): Opacity for shaded areas (0-1). Default 0.15. Ignored for lines.
 #'     \item label_position (optional): Label position - "top", "middle", or "bottom". Default "top".
 #'   }
-#'   Default NULL (no milestone lines).
+#'   Example with mixed types:
+#'   \preformatted{
+#'   milestones <- data.frame(
+#'     label = c("Kickoff", "Review Period", "Deadline"),
+#'     color = c("green", "blue", "red")
+#'   )
+#'   milestones$date <- list(
+#'     "01/15/2025",
+#'     c("03/01/2025", "03/31/2025"),
+#'     "12/31/2025"
+#'   )}
+#'   Default NULL (no milestone markers).
 #' @param color_config List or NULL. Configuration for chart colors. Structure depends on mode:
 #'   \itemize{
 #'     \item mode="wbs" (default if NULL): Activities inherit colors from parent WBS
@@ -108,6 +123,9 @@ NULL
 #'     \item yaxis_label_width: Numeric, width of y-axis label area in pixels (default 300)
 #'     \item yaxis_label_max_chars: Numeric or NULL, maximum characters for labels before truncating with "..." (NULL = no truncation)
 #'     \item hover_popup_max_chars: Numeric, maximum characters per line in hover popups before wrapping to next line (default 50)
+#'     \item show_yaxis_labels: Logical, whether to show y-axis labels (default TRUE).
+#'       When FALSE, activity labels are hidden. If display_config$wbs$show_labels is TRUE,
+#'       WBS labels will still be shown; otherwise all y-axis labels are hidden.
 #'   }
 #'   Example: \preformatted{list(
 #'     buffer_days = 30,
@@ -116,7 +134,8 @@ NULL
 #'     y_scroll_position = NULL,
 #'     yaxis_label_width = 300,
 #'     yaxis_label_max_chars = NULL,
-#'     hover_popup_max_chars = 50
+#'     hover_popup_max_chars = 50,
+#'     show_yaxis_labels = TRUE
 #'   )}
 #'   If NULL, uses defaults shown above. Default NULL.
 #' @param tooltip_config List or NULL. Configuration for custom tooltip fields. Structure:
@@ -453,39 +472,97 @@ Ganttify <- function(
       stop("milestone_lines must have 'date' and 'label' columns")
     }
 
-    # Create a copy to work with
-    milestone_data <- milestone_lines
+    # Process each milestone row
+    n_milestones <- nrow(milestone_lines)
+    milestone_data <- data.frame(
+      label = milestone_lines$label,
+      milestone_type = character(n_milestones),
+      date = as.Date(rep(NA, n_milestones)),
+      start_date = as.Date(rep(NA, n_milestones)),
+      end_date = as.Date(rep(NA, n_milestones)),
+      stringsAsFactors = FALSE
+    )
 
-    # Parse dates
-    if (is.character(milestone_data$date)) {
-      milestone_data$date <- as.Date(milestone_data$date, format = "%m/%d/%Y")
-    } else if (!inherits(milestone_data$date, "Date")) {
-      milestone_data$date <- as.Date(milestone_data$date)
+    # Handle date column - can be list, vector, or single values
+    date_col <- milestone_lines$date
+
+    for (i in 1:n_milestones) {
+      # Get the date value for this row
+      if (is.list(date_col)) {
+        date_val <- date_col[[i]]
+      } else {
+        date_val <- date_col[i]
+      }
+
+      # Determine type based on length
+      if (length(date_val) == 1) {
+        # Single date - vertical line
+        milestone_data$milestone_type[i] <- "line"
+        if (is.character(date_val)) {
+          milestone_data$date[i] <- as.Date(date_val, format = "%m/%d/%Y")
+        } else {
+          milestone_data$date[i] <- as.Date(date_val)
+        }
+      } else if (length(date_val) == 2) {
+        # Two dates - shaded area
+        milestone_data$milestone_type[i] <- "area"
+        if (is.character(date_val)) {
+          milestone_data$start_date[i] <- as.Date(date_val[1], format = "%m/%d/%Y")
+          milestone_data$end_date[i] <- as.Date(date_val[2], format = "%m/%d/%Y")
+        } else {
+          milestone_data$start_date[i] <- as.Date(date_val[1])
+          milestone_data$end_date[i] <- as.Date(date_val[2])
+        }
+      } else {
+        stop(paste0("Invalid date format for milestone '", milestone_lines$label[i],
+                    "'. Date must be a single value or a vector of 2 values."))
+      }
     }
 
     # Check for invalid dates
-    if (any(is.na(milestone_data$date))) {
+    line_rows <- milestone_data$milestone_type == "line"
+    area_rows <- milestone_data$milestone_type == "area"
+
+    if (any(line_rows) && any(is.na(milestone_data$date[line_rows]))) {
       stop("Invalid dates in milestone_lines. Please use MM/DD/YYYY format or Date objects")
+    }
+    if (any(area_rows) && (any(is.na(milestone_data$start_date[area_rows])) ||
+                           any(is.na(milestone_data$end_date[area_rows])))) {
+      stop("Invalid date range in milestone_lines. Please use MM/DD/YYYY format or Date objects")
     }
 
     # Add default values for optional columns
-    if (!"color" %in% names(milestone_data)) {
-      # Default color palette for milestones
+    if (!"color" %in% names(milestone_lines)) {
       default_colors <- c("#8B4513", "#2E8B57", "#4682B4", "#9932CC", "#FF6347",
                          "#FFD700", "#00CED1", "#FF1493", "#32CD32", "#FF8C00")
-      milestone_data$color <- rep(default_colors, length.out = nrow(milestone_data))
+      milestone_data$color <- rep(default_colors, length.out = n_milestones)
+    } else {
+      milestone_data$color <- milestone_lines$color
     }
 
-    if (!"dash" %in% names(milestone_data)) {
+    if (!"dash" %in% names(milestone_lines)) {
       milestone_data$dash <- "dash"
+    } else {
+      milestone_data$dash <- milestone_lines$dash
     }
 
-    if (!"width" %in% names(milestone_data)) {
+    if (!"width" %in% names(milestone_lines)) {
       milestone_data$width <- 2
+    } else {
+      milestone_data$width <- milestone_lines$width
     }
 
-    if (!"label_position" %in% names(milestone_data)) {
+    if (!"fill_opacity" %in% names(milestone_lines)) {
+      # Default: 0.15 for areas, 1.0 for lines
+      milestone_data$fill_opacity <- ifelse(milestone_data$milestone_type == "area", 0.15, 1.0)
+    } else {
+      milestone_data$fill_opacity <- milestone_lines$fill_opacity
+    }
+
+    if (!"label_position" %in% names(milestone_lines)) {
       milestone_data$label_position <- "top"
+    } else {
+      milestone_data$label_position <- milestone_lines$label_position
     }
 
     # Validate label_position values
@@ -693,7 +770,8 @@ Ganttify <- function(
       y_scroll_position = NULL,
       yaxis_label_width = 300,
       yaxis_label_max_chars = NULL,
-      hover_popup_max_chars = 50
+      hover_popup_max_chars = 50,
+      show_yaxis_labels = TRUE
     )
   }
 
@@ -704,6 +782,7 @@ Ganttify <- function(
   yaxis_label_width <- layout_config$yaxis_label_width %||% 300
   yaxis_label_max_chars <- layout_config$yaxis_label_max_chars  # Can be NULL
   hover_popup_max_chars <- layout_config$hover_popup_max_chars %||% 50
+  show_yaxis_labels <- layout_config$show_yaxis_labels %||% TRUE
 
   # ============================================
   # 1H. PARSE AND VALIDATE TOOLTIP CONFIG
@@ -1372,72 +1451,238 @@ Ganttify <- function(
   }
   
   # ============================================
-  # 10. ADD MILESTONE LINES (OPTIONAL)
+  # 10. ADD MILESTONE LINES AND AREAS (OPTIONAL)
   # ============================================
+
+  # Storage for milestone shapes (used for areas)
+  milestone_shapes <- list()
 
   if (!is.null(milestone_data)) {
     for (i in 1:nrow(milestone_data)) {
-      milestone_date <- milestone_data$date[i]
 
-      # Only show the line if it falls within the plot range
-      if (milestone_date >= plot_min_date && milestone_date <= plot_max_date) {
-        # Add the vertical line
-        fig <- fig %>% add_trace(
-          type = "scatter",
-          mode = "lines",
-          x = c(milestone_date, milestone_date),
-          y = c(y_range_min, y_range_max),
-          line = list(
-            color = milestone_data$color[i],
-            width = milestone_data$width[i],
-            dash = milestone_data$dash[i]
-          ),
-          name = milestone_data$label[i],
-          showlegend = FALSE,
-          hoverinfo = "text",
-          hovertext = paste0(
-            "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
-            "Date: ", format(milestone_date, "%Y-%m-%d")
+      if (milestone_data$milestone_type[i] == "line") {
+        # SINGLE DATE - VERTICAL LINE
+        milestone_date <- milestone_data$date[i]
+
+        # Only show the line if it falls within the plot range
+        if (milestone_date >= plot_min_date && milestone_date <= plot_max_date) {
+          # Add the vertical line
+          fig <- fig %>% add_trace(
+            type = "scatter",
+            mode = "lines",
+            x = c(milestone_date, milestone_date),
+            y = c(y_range_min, y_range_max),
+            line = list(
+              color = milestone_data$color[i],
+              width = milestone_data$width[i],
+              dash = milestone_data$dash[i]
+            ),
+            name = milestone_data$label[i],
+            showlegend = FALSE,
+            hoverinfo = "text",
+            hovertext = paste0(
+              "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
+              "Date: ", format(milestone_date, "%Y-%m-%d")
+            )
           )
-        )
 
-        # Determine y position for label based on label_position
-        label_y_position <- switch(
-          milestone_data$label_position[i],
-          "top" = y_range_max,
-          "middle" = (y_range_min + y_range_max) / 2,
-          "bottom" = y_range_min,
-          y_range_max  # default to top
-        )
+          # Determine y position for label based on label_position
+          label_y_position <- switch(
+            milestone_data$label_position[i],
+            "top" = y_range_max,
+            "middle" = (y_range_min + y_range_max) / 2,
+            "bottom" = y_range_min,
+            y_range_max  # default to top
+          )
 
-        # Determine vertical alignment based on position
-        label_yanchor <- switch(
-          milestone_data$label_position[i],
-          "top" = "bottom",
-          "middle" = "middle",
-          "bottom" = "top",
-          "bottom"  # default
-        )
+          # Determine vertical alignment based on position
+          label_yanchor <- switch(
+            milestone_data$label_position[i],
+            "top" = "bottom",
+            "middle" = "middle",
+            "bottom" = "top",
+            "bottom"  # default
+          )
 
-        # Add text annotation for the milestone label
-        text_annotations <- c(text_annotations, list(list(
-          x = milestone_date,
-          y = label_y_position,
-          text = milestone_data$label[i],
-          xanchor = "center",
-          yanchor = label_yanchor,
-          yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
-          showarrow = FALSE,
-          font = list(
-            size = 10,
-            color = milestone_data$color[i],
-            family = "Arial, sans-serif"
-          ),
-          bgcolor = "rgba(255, 255, 255, 0.8)",
-          bordercolor = milestone_data$color[i],
-          borderwidth = 1,
-          borderpad = 3
-        )))
+          # Add text annotation for the milestone label
+          text_annotations <- c(text_annotations, list(list(
+            x = milestone_date,
+            y = label_y_position,
+            text = milestone_data$label[i],
+            xanchor = "center",
+            yanchor = label_yanchor,
+            yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+            showarrow = FALSE,
+            font = list(
+              size = 10,
+              color = milestone_data$color[i],
+              family = "Arial, sans-serif"
+            ),
+            bgcolor = "rgba(255, 255, 255, 0.8)",
+            bordercolor = milestone_data$color[i],
+            borderwidth = 1,
+            borderpad = 3
+          )))
+        }
+
+      } else if (milestone_data$milestone_type[i] == "area") {
+        # DATE RANGE - SHADED AREA (or line if too narrow)
+        start_date <- milestone_data$start_date[i]
+        end_date <- milestone_data$end_date[i]
+
+        # Check if area overlaps with plot range
+        if (end_date >= plot_min_date && start_date <= plot_max_date) {
+
+          # Check if the date range is too narrow - if so, draw a line instead
+          # Uses same 0.3% threshold as activity bars
+          total_range <- as.numeric(plot_max_date - plot_min_date)
+          milestone_duration <- as.numeric(end_date - start_date)
+          min_area_threshold <- total_range * 0.003  # 0.3% of range, same as bars
+
+          if (milestone_duration < min_area_threshold) {
+            # Too narrow - draw as a vertical line at the midpoint
+            mid_date <- start_date + (end_date - start_date) / 2
+
+            fig <- fig %>% add_trace(
+              type = "scatter",
+              mode = "lines",
+              x = c(mid_date, mid_date),
+              y = c(y_range_min, y_range_max),
+              line = list(
+                color = milestone_data$color[i],
+                width = milestone_data$width[i],
+                dash = milestone_data$dash[i]
+              ),
+              name = milestone_data$label[i],
+              showlegend = FALSE,
+              hoverinfo = "text",
+              hovertext = paste0(
+                "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
+                "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
+                "End: ", format(end_date, "%Y-%m-%d"), "<br>",
+                "Duration: ", milestone_duration + 1, " days"
+              )
+            )
+
+            # Determine y position for label
+            label_y_position <- switch(
+              milestone_data$label_position[i],
+              "top" = y_range_max,
+              "middle" = (y_range_min + y_range_max) / 2,
+              "bottom" = y_range_min,
+              y_range_max
+            )
+
+            label_yanchor <- switch(
+              milestone_data$label_position[i],
+              "top" = "bottom",
+              "middle" = "middle",
+              "bottom" = "top",
+              "bottom"
+            )
+
+            text_annotations <- c(text_annotations, list(list(
+              x = mid_date,
+              y = label_y_position,
+              text = milestone_data$label[i],
+              xanchor = "center",
+              yanchor = label_yanchor,
+              yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+              showarrow = FALSE,
+              font = list(
+                size = 10,
+                color = milestone_data$color[i],
+                family = "Arial, sans-serif"
+              ),
+              bgcolor = "rgba(255, 255, 255, 0.8)",
+              bordercolor = milestone_data$color[i],
+              borderwidth = 1,
+              borderpad = 3
+            )))
+
+          } else {
+            # Wide enough - draw as shaded area
+            area_color <- milestone_data$color[i]
+            fill_opacity <- milestone_data$fill_opacity[i]
+
+            # Add shape for the shaded area
+            # Use separate opacity parameter instead of rgba (more reliable in Plotly)
+            milestone_shapes <- c(milestone_shapes, list(list(
+              type = "rect",
+              xref = "x",
+              yref = "paper",
+              x0 = as.character(start_date),
+              x1 = as.character(end_date),
+              y0 = 0,
+              y1 = 1,
+              fillcolor = area_color,
+              opacity = fill_opacity,
+              line = list(
+                color = area_color,
+                width = 1
+              ),
+              layer = "below"
+            )))
+
+            # Add invisible trace for hover functionality on area
+            mid_date <- start_date + (end_date - start_date) / 2
+            fig <- fig %>% add_trace(
+              type = "scatter",
+              mode = "lines",
+              x = c(start_date, end_date),
+              y = c((y_range_min + y_range_max) / 2, (y_range_min + y_range_max) / 2),
+              line = list(color = "transparent", width = 0),
+              opacity = 0,
+              name = milestone_data$label[i],
+              showlegend = FALSE,
+              hoverinfo = "text",
+              hovertext = paste0(
+                "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
+                "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
+                "End: ", format(end_date, "%Y-%m-%d"), "<br>",
+                "Duration: ", as.numeric(end_date - start_date) + 1, " days"
+              )
+            )
+
+            # Determine y position for label based on label_position
+            label_y_position <- switch(
+              milestone_data$label_position[i],
+              "top" = y_range_max,
+              "middle" = (y_range_min + y_range_max) / 2,
+              "bottom" = y_range_min,
+              y_range_max  # default to top
+            )
+
+            # Determine vertical alignment based on position
+            label_yanchor <- switch(
+              milestone_data$label_position[i],
+              "top" = "bottom",
+              "middle" = "middle",
+              "bottom" = "top",
+              "bottom"  # default
+            )
+
+            # Add text annotation for the milestone label (centered on area)
+            text_annotations <- c(text_annotations, list(list(
+              x = mid_date,
+              y = label_y_position,
+              text = milestone_data$label[i],
+              xanchor = "center",
+              yanchor = label_yanchor,
+              yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+              showarrow = FALSE,
+              font = list(
+                size = 10,
+                color = milestone_data$color[i],
+                family = "Arial, sans-serif"
+              ),
+              bgcolor = "rgba(255, 255, 255, 0.8)",
+              bordercolor = milestone_data$color[i],
+              borderwidth = 1,
+              borderpad = 3
+            )))
+          }
+        }
       }
     }
   }
@@ -1445,7 +1690,27 @@ Ganttify <- function(
   # ============================================
   # 11. CONFIGURE LAYOUT WITH Y-AXIS SCROLLING
   # ============================================
-  
+
+  # Determine which y-axis labels to show based on configuration
+  if (nrow(plot_data) > 0) {
+    if (show_yaxis_labels) {
+      # Show all labels (default behavior)
+      yaxis_ticktext <- plot_data$y_label_html
+      effective_label_width <- yaxis_label_width
+    } else if (show_wbs_labels) {
+      # Only show WBS labels, hide activity labels
+      yaxis_ticktext <- ifelse(plot_data$type == "WBS", plot_data$y_label_html, "")
+      effective_label_width <- yaxis_label_width
+    } else {
+      # Hide all labels - use minimal margin
+      yaxis_ticktext <- rep("", nrow(plot_data))
+      effective_label_width <- 50
+    }
+  } else {
+    yaxis_ticktext <- c()
+    effective_label_width <- 50
+  }
+
   fig <- fig %>% layout(
     title = list(
       text = paste0(chart_title),
@@ -1463,7 +1728,7 @@ Ganttify <- function(
       title = "",
       tickmode = "array",
       tickvals = if(nrow(plot_data) > 0) plot_data$y_position else c(),
-      ticktext = if(nrow(plot_data) > 0) plot_data$y_label_html else c(),
+      ticktext = yaxis_ticktext,
       showgrid = TRUE,
       autorange = FALSE,
       range = c(y_range_min, y_range_max),
@@ -1473,10 +1738,11 @@ Ganttify <- function(
       fixedrange = FALSE
     ),
     annotations = text_annotations,
+    shapes = if (length(milestone_shapes) > 0) milestone_shapes else NULL,
     hovermode = "closest",
     plot_bgcolor = "white",  # Changed to white for better contrast with alternating backgrounds
     paper_bgcolor = "white",
-    margin = list(l = yaxis_label_width, r = 50, t = 80, b = 80),
+    margin = list(l = effective_label_width, r = 50, t = 80, b = 80),
     dragmode = "pan"
   )
   
@@ -1693,15 +1959,16 @@ Ganttify <- function(
           }
         }
         
-        // Preserve the today line shape if it exists
+        // Preserve milestone shapes (areas with borders, not alternating backgrounds)
         var existingShapes = el.layout.shapes || [];
-        var todayLineShape = existingShapes.find(function(shape) {
-          return shape.line && shape.line.dash === 'dash' && shape.line.color === 'red';
+        existingShapes.forEach(function(shape) {
+          // Preserve shapes that have a border (milestone areas) or are today lines
+          var isMilestoneArea = shape.type === 'rect' && shape.line && shape.line.width > 0;
+          var isTodayLine = shape.line && shape.line.dash === 'dash' && shape.line.color === 'red';
+          if (isMilestoneArea || isTodayLine) {
+            backgroundShapes.push(shape);
+          }
         });
-        
-        if (todayLineShape) {
-          backgroundShapes.push(todayLineShape);
-        }
         
         // Build the update object
         var updateObj = {
