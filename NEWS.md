@@ -1,3 +1,42 @@
+# ganttify 0.2.1
+
+## New Features
+
+* **Milestone Label Levels**: Added `label_level` parameter to milestone markers for vertical stacking of labels. Set to 1 or 2 to control which labels appear above others when milestones are close together.
+
+```r
+milestones <- data.frame(
+  label = c("Kickoff", "Budget Approval"),
+  color = c("blue", "green"),
+  label_level = c(1, 2)  # Level 1 appears above level 2
+)
+milestones$date <- list("01/05/2025", "01/10/2025")
+```
+
+* **Milestone Custom Tooltips**: Added support for custom tooltip fields in milestones via `tooltip_config$milestone`. Add any columns to your milestone data frame and display them in hover tooltips.
+
+```r
+milestones <- data.frame(
+  label = c("Kickoff", "Review Period"),
+  color = c("blue", "purple"),
+  Description = c("Project kickoff meeting", "Technical review"),
+  Owner = c("PM", "Tech Lead")
+)
+milestones$date <- list("01/05/2025", c("02/10/2025", "02/20/2025"))
+
+Ganttify(
+  ...,
+  milestone_lines = milestones,
+  tooltip_config = list(
+    milestone = c("Description", "Owner")
+  )
+)
+```
+
+## Improvements
+
+* Fixed hover functionality for milestone areas (shaded date ranges) - now triggers at the label position (top/middle/bottom edge) for consistency with line milestones.
+
 # ganttify 0.2.0
 
 ## New Features

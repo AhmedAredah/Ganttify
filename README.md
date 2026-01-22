@@ -15,7 +15,7 @@ Create interactive Primavera-style Gantt charts with Work Breakdown Structure (W
 - **Interactive Charts**: Pan, zoom, and hover for detailed information
 - **Dynamic Date Formatting**: Automatically adjusts time scale based on zoom level
 - **Scrollable Views**: Handle large projects with vertical scrolling
-- **Milestone Lines & Areas**: Add vertical date markers or shaded date-range areas with custom labels
+- **Milestone Lines & Areas**: Add vertical date markers or shaded date-range areas with custom labels, label levels for stacking, and custom tooltips
 - **Past Activity Dimming**: Optionally dim completed activities for better focus (via bar_config)
 - **Dynamic Minimum Bar Width**: Automatically ensures short-duration activities remain visible at any zoom level by dynamically adjusting bar width
 - **Flexible Display**: Show/hide WBS and activity names on bars (via display_config)
@@ -202,6 +202,43 @@ Ganttify(
   milestone_lines = milestones
 )
 
+# Milestone label levels (prevent overlapping labels)
+milestones <- data.frame(
+  label = c("Kickoff", "Budget Approval", "Review Period", "Go Live"),
+  color = c("blue", "green", "purple", "red"),
+  label_level = c(1, 2, 1, 2)  # Level 1 appears above level 2
+)
+milestones$date <- list(
+  "01/05/2025",
+  "01/10/2025",
+  c("02/10/2025", "02/20/2025"),
+  "03/31/2025"
+)
+
+Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  milestone_lines = milestones
+)
+
+# Milestone custom tooltips
+milestones <- data.frame(
+  label = c("Kickoff", "Review Period"),
+  color = c("blue", "purple"),
+  Description = c("Project kickoff meeting", "Technical design review"),
+  Owner = c("Project Manager", "Tech Lead")
+)
+milestones$date <- list("01/05/2025", c("02/10/2025", "02/20/2025"))
+
+Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  milestone_lines = milestones,
+  tooltip_config = list(
+    milestone = c("Description", "Owner")
+  )
+)
+
 # Hide y-axis labels (useful for presentations)
 Ganttify(
   wbs_structure = test_project$wbs_structure,
@@ -334,10 +371,10 @@ Key parameters for the `Ganttify()` function:
 - `label_config`: List with label templates for y-axis and bars (supports placeholders)
 - `bar_config`: List with bar styling (opacity, height, dim_opacity, dim_past_activities)
 - `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars, show_yaxis_labels)
-- `tooltip_config`: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities). Fields with NA/empty values are auto-hidden.
+- `tooltip_config`: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities, milestone: columns from milestone_lines). Fields with NA/empty values are auto-hidden.
 
 ### Other Parameters
-- `milestone_lines`: Data frame with milestone dates and labels. Use single date for vertical lines or two dates for shaded areas (via list column). Supports fill_opacity for area transparency.
+- `milestone_lines`: Data frame with milestone dates and labels. Use single date for vertical lines or two dates for shaded areas (via list column). Supports fill_opacity for area transparency, label_level (1 or 2) for vertical stacking, and custom columns for tooltips.
 - `chart_title`: Chart title (default: "Project Gantt Chart with WBS")
 - `x_range`: Date range for x-axis zoom
 
