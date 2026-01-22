@@ -165,11 +165,13 @@ If NULL, uses defaults shown above. Default NULL.}
 \itemize{
   \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips
   \item activity: Character vector of column names from activities to display in activity tooltips
+  \item milestone: Character vector of column names from milestone_lines to display in milestone tooltips
 }
 Fields that don't exist in the data or have NA/empty values will be automatically hidden.
 Example: \preformatted{list(
   wbs = c("Owner", "Budget"),
-  activity = c("Status", "Agency", "Priority", "Notes")
+  activity = c("Status", "Agency", "Priority", "Notes"),
+  milestone = c("Description", "Owner", "Priority")
 )}
 If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.}
 }
