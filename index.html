@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1</span>
       </span>
     </div>
 
@@ -87,7 +87,7 @@
 <li>
 <strong>Scrollable Views</strong>: Handle large projects with vertical scrolling</li>
 <li>
-<strong>Milestone Lines &amp; Areas</strong>: Add vertical date markers or shaded date-range areas with custom labels</li>
+<strong>Milestone Lines &amp; Areas</strong>: Add vertical date markers or shaded date-range areas with custom labels, label levels for stacking, and custom tooltips</li>
 <li>
 <strong>Past Activity Dimming</strong>: Optionally dim completed activities for better focus (via bar_config)</li>
 <li>
@@ -286,6 +286,43 @@
 <span>  milestone_lines <span class="op">=</span> <span class="va">milestones</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Milestone label levels (prevent overlapping labels)</span></span>
+<span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kickoff"</span>, <span class="st">"Budget Approval"</span>, <span class="st">"Review Period"</span>, <span class="st">"Go Live"</span><span class="op">)</span>,</span>
+<span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"green"</span>, <span class="st">"purple"</span>, <span class="st">"red"</span><span class="op">)</span>,</span>
+<span>  label_level <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>  <span class="co"># Level 1 appears above level 2</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">milestones</span><span class="op">$</span><span class="va">date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"01/05/2025"</span>,</span>
+<span>  <span class="st">"01/10/2025"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"02/10/2025"</span>, <span class="st">"02/20/2025"</span><span class="op">)</span>,</span>
+<span>  <span class="st">"03/31/2025"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  milestone_lines <span class="op">=</span> <span class="va">milestones</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Milestone custom tooltips</span></span>
+<span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kickoff"</span>, <span class="st">"Review Period"</span><span class="op">)</span>,</span>
+<span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"purple"</span><span class="op">)</span>,</span>
+<span>  Description <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Project kickoff meeting"</span>, <span class="st">"Technical design review"</span><span class="op">)</span>,</span>
+<span>  Owner <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Project Manager"</span>, <span class="st">"Tech Lead"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">milestones</span><span class="op">$</span><span class="va">date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"01/05/2025"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"02/10/2025"</span>, <span class="st">"02/20/2025"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
+<span>  activities <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">activities</span>,</span>
+<span>  milestone_lines <span class="op">=</span> <span class="va">milestones</span>,</span>
+<span>  tooltip_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    milestone <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Description"</span>, <span class="st">"Owner"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Hide y-axis labels (useful for presentations)</span></span>
 <span><span class="fu"><a href="reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
 <span>  wbs_structure <span class="op">=</span> <span class="va">test_project</span><span class="op">$</span><span class="va">wbs_structure</span>,</span>
@@ -427,7 +464,7 @@
 <li>
 <code>layout_config</code>: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars, show_yaxis_labels)</li>
 <li>
-<code>tooltip_config</code>: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities). Fields with NA/empty values are auto-hidden.</li>
+<code>tooltip_config</code>: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities, milestone: columns from milestone_lines). Fields with NA/empty values are auto-hidden.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -435,7 +472,7 @@
 </h3>
 <ul>
 <li>
-<code>milestone_lines</code>: Data frame with milestone dates and labels. Use single date for vertical lines or two dates for shaded areas (via list column). Supports fill_opacity for area transparency.</li>
+<code>milestone_lines</code>: Data frame with milestone dates and labels. Use single date for vertical lines or two dates for shaded areas (via list column). Supports fill_opacity for area transparency, label_level (1 or 2) for vertical stacking, and custom columns for tooltips.</li>
 <li>
 <code>chart_title</code>: Chart title (default: “Project Gantt Chart with WBS”)</li>
 <li>

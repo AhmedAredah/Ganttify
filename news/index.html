@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1</span>
       </span>
     </div>
 
@@ -48,12 +48,49 @@
     </div>
 
     <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.1" id="ganttify-021">ganttify 0.2.1<a class="anchor" aria-label="anchor" href="#ganttify-021"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-2-1">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-2-1"></a></h3>
+<ul><li>
+<strong>Milestone Label Levels</strong>: Added <code>label_level</code> parameter to milestone markers for vertical stacking of labels. Set to 1 or 2 to control which labels appear above others when milestones are close together.</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kickoff"</span>, <span class="st">"Budget Approval"</span><span class="op">)</span>,</span>
+<span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"green"</span><span class="op">)</span>,</span>
+<span>  label_level <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">2</span><span class="op">)</span>  <span class="co"># Level 1 appears above level 2</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">milestones</span><span class="op">$</span><span class="va">date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"01/05/2025"</span>, <span class="st">"01/10/2025"</span><span class="op">)</span></span></code></pre></div>
+<ul><li>
+<strong>Milestone Custom Tooltips</strong>: Added support for custom tooltip fields in milestones via <code>tooltip_config$milestone</code>. Add any columns to your milestone data frame and display them in hover tooltips.</li>
+</ul><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Kickoff"</span>, <span class="st">"Review Period"</span><span class="op">)</span>,</span>
+<span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"blue"</span>, <span class="st">"purple"</span><span class="op">)</span>,</span>
+<span>  Description <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Project kickoff meeting"</span>, <span class="st">"Technical review"</span><span class="op">)</span>,</span>
+<span>  Owner <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"PM"</span>, <span class="st">"Tech Lead"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">milestones</span><span class="op">$</span><span class="va">date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="st">"01/05/2025"</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"02/10/2025"</span>, <span class="st">"02/20/2025"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="../reference/Ganttify.html">Ganttify</a></span><span class="op">(</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  milestone_lines <span class="op">=</span> <span class="va">milestones</span>,</span>
+<span>  tooltip_config <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>    milestone <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Description"</span>, <span class="st">"Owner"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="improvements-0-2-1">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-1"></a></h3>
+<ul><li>Fixed hover functionality for milestone areas (shaded date ranges) - now triggers at the label position (top/middle/bottom edge) for consistency with line milestones.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="page-header" data-toc-text="0.2.0" id="ganttify-020">ganttify 0.2.0<a class="anchor" aria-label="anchor" href="#ganttify-020"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-2-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
 <ul><li>
 <strong>Milestone Areas</strong>: Milestone markers now support date ranges in addition to single dates. Use a list column for the <code>date</code> field to specify either a single date (vertical line) or two dates (shaded area).</li>
-</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Deadline"</span>, <span class="st">"Review Period"</span><span class="op">)</span>,</span>
 <span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"red"</span>, <span class="st">"blue"</span><span class="op">)</span>,</span>
@@ -65,7 +102,7 @@
 <span><span class="op">)</span></span></code></pre></div>
 <ul><li>
 <strong>Y-Axis Label Visibility</strong>: Added <code>show_yaxis_labels</code> to <code>layout_config</code> to hide y-axis labels. When set to <code>FALSE</code>, activity labels are hidden. If <code>display_config$wbs$show_labels</code> is <code>TRUE</code>, WBS labels will still be shown.</li>
-</ul><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">layout_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>show_yaxis_labels <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
@@ -80,7 +117,7 @@
 <h3 id="new-features-0-1-8">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-8"></a></h3>
 <ul><li>
 <strong>Custom Tooltip Fields</strong>: Added <code>tooltip_config</code> parameter to display custom columns from your data in hover tooltips. Specify which columns from <code>wbs_structure</code> and <code>activities</code> to show. Fields that don’t exist or have empty/NA values are automatically hidden.</li>
-</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tooltip_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Owner"</span>, <span class="st">"Budget"</span><span class="op">)</span>,</span>
 <span>  activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Status"</span>, <span class="st">"Agency"</span>, <span class="st">"Priority"</span><span class="op">)</span></span>
