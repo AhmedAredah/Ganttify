@@ -48,12 +48,39 @@
     </div>
 
     <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.0" id="ganttify-020">ganttify 0.2.0<a class="anchor" aria-label="anchor" href="#ganttify-020"></a></h2>
+<div class="section level3">
+<h3 id="new-features-0-2-0">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-2-0"></a></h3>
+<ul><li>
+<strong>Milestone Areas</strong>: Milestone markers now support date ranges in addition to single dates. Use a list column for the <code>date</code> field to specify either a single date (vertical line) or two dates (shaded area).</li>
+</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">milestones</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>  label <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Deadline"</span>, <span class="st">"Review Period"</span><span class="op">)</span>,</span>
+<span>  color <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"red"</span>, <span class="st">"blue"</span><span class="op">)</span>,</span>
+<span>  fill_opacity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0.15</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">milestones</span><span class="op">$</span><span class="va">date</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  <span class="st">"12/01/2024"</span>,                    <span class="co"># Single date = line</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"10/01/2024"</span>, <span class="st">"10/31/2024"</span><span class="op">)</span>    <span class="co"># Two dates = shaded area</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<ul><li>
+<strong>Y-Axis Label Visibility</strong>: Added <code>show_yaxis_labels</code> to <code>layout_config</code> to hide y-axis labels. When set to <code>FALSE</code>, activity labels are hidden. If <code>display_config$wbs$show_labels</code> is <code>TRUE</code>, WBS labels will still be shown.</li>
+</ul><div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">layout_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>show_yaxis_labels <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="improvements-0-2-0">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-0"></a></h3>
+<ul><li>Narrow milestone date ranges are automatically converted to vertical lines (uses same 0.3% threshold as activity bars).</li>
+<li>Fixed milestone area opacity by using Plotly’s separate <code>opacity</code> parameter instead of rgba.</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="page-header" data-toc-text="0.1.8" id="ganttify-018">ganttify 0.1.8<small>2025-12-19</small><a class="anchor" aria-label="anchor" href="#ganttify-018"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-1-8">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-1-8"></a></h3>
 <ul><li>
 <strong>Custom Tooltip Fields</strong>: Added <code>tooltip_config</code> parameter to display custom columns from your data in hover tooltips. Specify which columns from <code>wbs_structure</code> and <code>activities</code> to show. Fields that don’t exist or have empty/NA values are automatically hidden.</li>
-</ul><div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+</ul><div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">tooltip_config</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  wbs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Owner"</span>, <span class="st">"Budget"</span><span class="op">)</span>,</span>
 <span>  activity <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Status"</span>, <span class="st">"Agency"</span>, <span class="st">"Priority"</span><span class="op">)</span></span>
