@@ -58,6 +58,9 @@ If provided, must be a data frame with the following columns:
   \item width (optional): Line width in pixels for single-date milestones. Default 2.
   \item fill_opacity (optional): Opacity for shaded areas (0-1). Default 0.15. Ignored for lines.
   \item label_position (optional): Label position - "top", "middle", or "bottom". Default "top".
+  \item label_level (optional): Vertical stacking level for labels - 1 or 2. Level 1 labels
+    are rendered above level 2 labels (further from the chart area). This is useful when
+    multiple milestones are close together and labels would overlap. Default 1.
 }
 Example with mixed types:
 \preformatted{
@@ -70,6 +73,14 @@ milestones$date <- list(
   c("03/01/2025", "03/31/2025"),
   "12/31/2025"
 )}
+Example with label levels (useful for overlapping milestones):
+\preformatted{
+milestones <- data.frame(
+  label = c("Phase 1 Start", "Phase 2 Start", "Final Review"),
+  color = c("blue", "green", "red"),
+  label_level = c(1, 2, 1)  # Level 1 labels appear above level 2
+)
+milestones$date <- list("01/15/2025", "01/20/2025", "06/30/2025")}
 Default NULL (no milestone markers).}
 
 \item{color_config}{List or NULL. Configuration for chart colors. Structure depends on mode:

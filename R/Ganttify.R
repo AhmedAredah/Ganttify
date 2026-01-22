@@ -52,6 +52,9 @@ NULL
 #'     \item width (optional): Line width in pixels for single-date milestones. Default 2.
 #'     \item fill_opacity (optional): Opacity for shaded areas (0-1). Default 0.15. Ignored for lines.
 #'     \item label_position (optional): Label position - "top", "middle", or "bottom". Default "top".
+#'     \item label_level (optional): Vertical stacking level for labels - 1 or 2. Level 1 labels
+#'       are rendered above level 2 labels (further from the chart area). This is useful when
+#'       multiple milestones are close together and labels would overlap. Default 1.
 #'   }
 #'   Example with mixed types:
 #'   \preformatted{
@@ -64,6 +67,14 @@ NULL
 #'     c("03/01/2025", "03/31/2025"),
 #'     "12/31/2025"
 #'   )}
+#'   Example with label levels (useful for overlapping milestones):
+#'   \preformatted{
+#'   milestones <- data.frame(
+#'     label = c("Phase 1 Start", "Phase 2 Start", "Final Review"),
+#'     color = c("blue", "green", "red"),
+#'     label_level = c(1, 2, 1)  # Level 1 labels appear above level 2
+#'   )
+#'   milestones$date <- list("01/15/2025", "01/20/2025", "06/30/2025")}
 #'   Default NULL (no milestone markers).
 #' @param color_config List or NULL. Configuration for chart colors. Structure depends on mode:
 #'   \itemize{
@@ -571,6 +582,21 @@ Ganttify <- function(
     if (any(invalid_positions)) {
       milestone_data$label_position[invalid_positions] <- "top"
       warning("Invalid label_position values found. Using 'top' as default. Valid values: 'top', 'middle', 'bottom'")
+    }
+
+    # Handle label_level column (for vertical stacking of labels)
+    if (!"label_level" %in% names(milestone_lines)) {
+      milestone_data$label_level <- 1  # Default to level 1
+    } else {
+      milestone_data$label_level <- milestone_lines$label_level
+    }
+
+    # Validate label_level values (must be 1 or 2)
+    valid_levels <- c(1, 2)
+    invalid_levels <- !milestone_data$label_level %in% valid_levels
+    if (any(invalid_levels)) {
+      milestone_data$label_level[invalid_levels] <- 1
+      warning("Invalid label_level values found. Using 1 as default. Valid values: 1, 2")
     }
   }
 
@@ -1504,6 +1530,16 @@ Ganttify <- function(
             "bottom"  # default
           )
 
+          # Calculate yshift based on label_position and label_level
+          # Level 1 labels are rendered above (further from chart) level 2 labels
+          label_yshift <- if (milestone_data$label_position[i] == "top") {
+            if (milestone_data$label_level[i] == 1) 25 else 5
+          } else if (milestone_data$label_position[i] == "bottom") {
+            if (milestone_data$label_level[i] == 1) -25 else -5
+          } else {  # middle
+            if (milestone_data$label_level[i] == 1) 15 else -5
+          }
+
           # Add text annotation for the milestone label
           text_annotations <- c(text_annotations, list(list(
             x = milestone_date,
@@ -1511,7 +1547,7 @@ Ganttify <- function(
             text = milestone_data$label[i],
             xanchor = "center",
             yanchor = label_yanchor,
-            yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+            yshift = label_yshift,
             showarrow = FALSE,
             font = list(
               size = 10,
@@ -1581,13 +1617,23 @@ Ganttify <- function(
               "bottom"
             )
 
+            # Calculate yshift based on label_position and label_level
+            # Level 1 labels are rendered above (further from chart) level 2 labels
+            label_yshift <- if (milestone_data$label_position[i] == "top") {
+              if (milestone_data$label_level[i] == 1) 25 else 5
+            } else if (milestone_data$label_position[i] == "bottom") {
+              if (milestone_data$label_level[i] == 1) -25 else -5
+            } else {  # middle
+              if (milestone_data$label_level[i] == 1) 15 else -5
+            }
+
             text_annotations <- c(text_annotations, list(list(
               x = mid_date,
               y = label_y_position,
               text = milestone_data$label[i],
               xanchor = "center",
               yanchor = label_yanchor,
-              yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+              yshift = label_yshift,
               showarrow = FALSE,
               font = list(
                 size = 10,
@@ -1662,6 +1708,16 @@ Ganttify <- function(
               "bottom"  # default
             )
 
+            # Calculate yshift based on label_position and label_level
+            # Level 1 labels are rendered above (further from chart) level 2 labels
+            label_yshift <- if (milestone_data$label_position[i] == "top") {
+              if (milestone_data$label_level[i] == 1) 25 else 5
+            } else if (milestone_data$label_position[i] == "bottom") {
+              if (milestone_data$label_level[i] == 1) -25 else -5
+            } else {  # middle
+              if (milestone_data$label_level[i] == 1) 15 else -5
+            }
+
             # Add text annotation for the milestone label (centered on area)
             text_annotations <- c(text_annotations, list(list(
               x = mid_date,
@@ -1669,7 +1725,7 @@ Ganttify <- function(
               text = milestone_data$label[i],
               xanchor = "center",
               yanchor = label_yanchor,
-              yshift = if (milestone_data$label_position[i] == "top") 5 else if (milestone_data$label_position[i] == "bottom") -5 else 0,
+              yshift = label_yshift,
               showarrow = FALSE,
               font = list(
                 size = 10,
