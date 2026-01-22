@@ -1700,7 +1700,15 @@ Ganttify <- function(
     } else if (show_wbs_labels) {
       # Only show WBS labels, hide activity labels
       yaxis_ticktext <- ifelse(plot_data$type == "WBS", plot_data$y_label_html, "")
-      effective_label_width <- yaxis_label_width
+      # Calculate margin based on actual WBS label lengths (smaller than full labels)
+      wbs_labels <- plot_data$y_label[plot_data$type == "WBS"]
+      if (length(wbs_labels) > 0) {
+        max_wbs_chars <- max(nchar(wbs_labels), na.rm = TRUE)
+        # Estimate width: ~7px per character for Courier New 11px + 20px padding
+        effective_label_width <- min(yaxis_label_width, max(100, max_wbs_chars * 7 + 20))
+      } else {
+        effective_label_width <- 100
+      }
     } else {
       # Hide all labels - use minimal margin
       yaxis_ticktext <- rep("", nrow(plot_data))
@@ -1731,6 +1739,7 @@ Ganttify <- function(
       ticktext = yaxis_ticktext,
       showgrid = TRUE,
       autorange = FALSE,
+      automargin = FALSE,  # Prevents margin recalculation during JS relayout
       range = c(y_range_min, y_range_max),
       tickfont = list(family = "Courier New, monospace", size = 11),
       side = "left",
@@ -1749,18 +1758,24 @@ Ganttify <- function(
   # ============================================
   # 12. ADD LEFT-ALIGN CSS AND SCROLL SUPPORT
   # ============================================
-  
-  fig <- fig %>% onRender("
+
+  # Pass show_yaxis_labels to JavaScript to conditionally apply alignment
+  js_show_yaxis_labels <- tolower(as.character(show_yaxis_labels))
+
+  fig <- fig %>% onRender(paste0("
     function(el) {
-      // Function to left-align y-axis tick labels
+      // Flag to control whether to apply y-axis label alignment
+      var shouldAlignLabels = ", js_show_yaxis_labels, ";
+
+      // Function to left-align y-axis tick labels (only when all labels are shown)
       function alignYAxisLabels() {
+        if (!shouldAlignLabels) return;  // Skip alignment when labels are hidden/partial
         var yAxisLabels = el.querySelectorAll('.yaxislayer-above text');
         yAxisLabels.forEach(function(label) {
           label.setAttribute('text-anchor', 'start');
-          label.setAttribute('x', '0');
         });
       }
-      
+
       // Function to update x-axis date format based on visible range
       function updateDateFormat() {
         if (!el.layout || !el.layout.xaxis || !el.layout.xaxis.range) {
@@ -2154,7 +2169,7 @@ Ganttify <- function(
         }
       });
     }
-  ")
-  
+  "))
+
   return(fig)
 }
