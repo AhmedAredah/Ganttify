@@ -153,11 +153,13 @@ NULL
 #'   \itemize{
 #'     \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips
 #'     \item activity: Character vector of column names from activities to display in activity tooltips
+#'     \item milestone: Character vector of column names from milestone_lines to display in milestone tooltips
 #'   }
 #'   Fields that don't exist in the data or have NA/empty values will be automatically hidden.
 #'   Example: \preformatted{list(
 #'     wbs = c("Owner", "Budget"),
-#'     activity = c("Status", "Agency", "Priority", "Notes")
+#'     activity = c("Status", "Agency", "Priority", "Notes"),
+#'     milestone = c("Description", "Owner", "Priority")
 #'   )}
 #'   If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.
 #'
@@ -818,7 +820,8 @@ Ganttify <- function(
   if (is.null(tooltip_config)) {
     tooltip_config <- list(
       wbs = character(0),
-      activity = character(0)
+      activity = character(0),
+      milestone = character(0)
     )
   }
 
@@ -832,6 +835,13 @@ Ganttify <- function(
   # Extract custom tooltip fields for activities
   tooltip_activity_fields <- if (!is.null(tooltip_config$activity)) {
     as.character(tooltip_config$activity)
+  } else {
+    character(0)
+  }
+
+  # Extract custom tooltip fields for milestones
+  tooltip_milestone_fields <- if (!is.null(tooltip_config$milestone)) {
+    as.character(tooltip_config$milestone)
   } else {
     character(0)
   }
@@ -1485,6 +1495,8 @@ Ganttify <- function(
 
   if (!is.null(milestone_data)) {
     for (i in 1:nrow(milestone_data)) {
+      # Build custom tooltip for this milestone (from original milestone_lines data)
+      custom_tooltip_milestone <- build_custom_tooltip(milestone_lines[i, ], tooltip_milestone_fields, milestone_lines, hover_popup_max_chars)
 
       if (milestone_data$milestone_type[i] == "line") {
         # SINGLE DATE - VERTICAL LINE
@@ -1508,7 +1520,9 @@ Ganttify <- function(
             hoverinfo = "text",
             hovertext = paste0(
               "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
-              "Date: ", format(milestone_date, "%Y-%m-%d")
+              "Type: Milestone<br>",
+              "Date: ", format(milestone_date, "%Y-%m-%d"),
+              custom_tooltip_milestone
             )
           )
 
@@ -1594,9 +1608,11 @@ Ganttify <- function(
               hoverinfo = "text",
               hovertext = paste0(
                 "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
+                "Type: Milestone<br>",
                 "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
                 "End: ", format(end_date, "%Y-%m-%d"), "<br>",
-                "Duration: ", milestone_duration + 1, " days"
+                "Duration: ", milestone_duration + 1, " days",
+                custom_tooltip_milestone
               )
             )
 
@@ -1670,33 +1686,37 @@ Ganttify <- function(
               layer = "below"
             )))
 
-            # Add invisible trace for hover functionality on area
-            mid_date <- start_date + (end_date - start_date) / 2
-            fig <- fig %>% add_trace(
-              type = "scatter",
-              mode = "lines",
-              x = c(start_date, end_date),
-              y = c((y_range_min + y_range_max) / 2, (y_range_min + y_range_max) / 2),
-              line = list(color = "transparent", width = 0),
-              opacity = 0,
-              name = milestone_data$label[i],
-              showlegend = FALSE,
-              hoverinfo = "text",
-              hovertext = paste0(
-                "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
-                "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
-                "End: ", format(end_date, "%Y-%m-%d"), "<br>",
-                "Duration: ", as.numeric(end_date - start_date) + 1, " days"
-              )
-            )
-
             # Determine y position for label based on label_position
+            mid_date <- start_date + (end_date - start_date) / 2
             label_y_position <- switch(
               milestone_data$label_position[i],
               "top" = y_range_max,
               "middle" = (y_range_min + y_range_max) / 2,
               "bottom" = y_range_min,
               y_range_max  # default to top
+            )
+
+            # Add invisible markers for hover at the label position (top/middle/bottom edge)
+            hover_x_area <- generate_hover_points(start_date, end_date)
+            hover_y_area <- rep(label_y_position, length(hover_x_area))
+
+            fig <- fig %>% add_trace(
+              type = "scatter",
+              mode = "markers",
+              x = hover_x_area,
+              y = hover_y_area,
+              marker = list(color = "rgba(0,0,0,0)", size = 20),
+              name = milestone_data$label[i],
+              showlegend = FALSE,
+              hoverinfo = "text",
+              hovertext = paste0(
+                "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
+                "Type: Milestone<br>",
+                "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
+                "End: ", format(end_date, "%Y-%m-%d"), "<br>",
+                "Duration: ", as.numeric(end_date - start_date) + 1, " days",
+                custom_tooltip_milestone
+              )
             )
 
             # Determine vertical alignment based on position
