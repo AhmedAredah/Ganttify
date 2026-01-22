@@ -1,3 +1,32 @@
+# ganttify 0.2.0
+
+## New Features
+
+* **Milestone Areas**: Milestone markers now support date ranges in addition to single dates. Use a list column for the `date` field to specify either a single date (vertical line) or two dates (shaded area).
+
+```r
+milestones <- data.frame(
+  label = c("Deadline", "Review Period"),
+  color = c("red", "blue"),
+  fill_opacity = c(1, 0.15)
+)
+milestones$date <- list(
+  "12/01/2024",                    # Single date = line
+  c("10/01/2024", "10/31/2024")    # Two dates = shaded area
+)
+```
+
+* **Y-Axis Label Visibility**: Added `show_yaxis_labels` to `layout_config` to hide y-axis labels. When set to `FALSE`, activity labels are hidden. If `display_config$wbs$show_labels` is `TRUE`, WBS labels will still be shown.
+
+```r
+layout_config = list(show_yaxis_labels = FALSE)
+```
+
+## Improvements
+
+* Narrow milestone date ranges are automatically converted to vertical lines (uses same 0.3% threshold as activity bars).
+* Fixed milestone area opacity by using Plotly's separate `opacity` parameter instead of rgba.
+
 # ganttify 0.1.8
 
 ## New Features

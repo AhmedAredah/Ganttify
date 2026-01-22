@@ -15,7 +15,7 @@ Create interactive Primavera-style Gantt charts with Work Breakdown Structure (W
 - **Interactive Charts**: Pan, zoom, and hover for detailed information
 - **Dynamic Date Formatting**: Automatically adjusts time scale based on zoom level
 - **Scrollable Views**: Handle large projects with vertical scrolling
-- **Milestone Lines**: Add vertical date markers with custom labels (including "today" line)
+- **Milestone Lines & Areas**: Add vertical date markers or shaded date-range areas with custom labels
 - **Past Activity Dimming**: Optionally dim completed activities for better focus (via bar_config)
 - **Dynamic Minimum Bar Width**: Automatically ensures short-duration activities remain visible at any zoom level by dynamically adjusting bar width
 - **Flexible Display**: Show/hide WBS and activity names on bars (via display_config)
@@ -184,6 +184,31 @@ Ganttify(
   milestone_lines = milestones
 )
 
+# Add milestone areas (date ranges) - use list column for dates
+milestones <- data.frame(
+  label = c("Today", "Review Period", "Release"),
+  color = c("red", "blue", "green"),
+  fill_opacity = c(1, 0.15, 1)  # Lower opacity for areas
+)
+milestones$date <- list(
+  Sys.Date(),                          # Single date = vertical line
+  c("10/01/2024", "10/31/2024"),       # Two dates = shaded area
+  "12/01/2024"                         # Single date = vertical line
+)
+
+Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  milestone_lines = milestones
+)
+
+# Hide y-axis labels (useful for presentations)
+Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  layout_config = list(show_yaxis_labels = FALSE)
+)
+
 # Adjust layout settings
 Ganttify(
   wbs_structure = test_project$wbs_structure,
@@ -308,11 +333,11 @@ Key parameters for the `Ganttify()` function:
 - `display_config`: List controlling visibility (WBS/activity show, labels, names on bars)
 - `label_config`: List with label templates for y-axis and bars (supports placeholders)
 - `bar_config`: List with bar styling (opacity, height, dim_opacity, dim_past_activities)
-- `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars)
+- `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars, show_yaxis_labels)
 - `tooltip_config`: List with custom tooltip fields (wbs: columns from wbs_structure, activity: columns from activities). Fields with NA/empty values are auto-hidden.
 
 ### Other Parameters
-- `milestone_lines`: Data frame with milestone dates and labels (use Sys.Date() for "today" line)
+- `milestone_lines`: Data frame with milestone dates and labels. Use single date for vertical lines or two dates for shaded areas (via list column). Supports fill_opacity for area transparency.
 - `chart_title`: Chart title (default: "Project Gantt Chart with WBS")
 - `x_range`: Date range for x-axis zoom
 

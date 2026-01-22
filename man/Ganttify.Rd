@@ -45,17 +45,32 @@ Default "Project Gantt Chart with WBS".}
 \item{x_range}{Character vector. Date range for x-axis zoom (e.g., c("2024-01-01", "2024-12-31")).
 If NULL, shows full project range.}
 
-\item{milestone_lines}{Data frame or NULL. Optional milestone lines to display on the chart.
+\item{milestone_lines}{Data frame or NULL. Optional milestone markers to display on the chart.
+Supports both single-date vertical lines and date-range shaded areas.
 If provided, must be a data frame with the following columns:
 \itemize{
-  \item date (required): Date for the vertical line (character in MM/DD/YYYY format or Date object)
-  \item label (required): Text label to display on the line
-  \item color (optional): Line color (e.g., "red", "#FF0000"). Defaults to color palette if not provided.
-  \item dash (optional): Line style - "solid", "dash", "dot", or "dashdot". Default "dash".
-  \item width (optional): Line width in pixels. Default 2.
+  \item date (required): Either a single date (for vertical line) or a vector of 2 dates
+    (for shaded area). Use a list column to mix both types. Dates can be character
+    in MM/DD/YYYY format or Date objects.
+  \item label (required): Text label to display on the milestone
+  \item color (optional): Color for line or area (e.g., "red", "#FF0000"). Defaults to color palette.
+  \item dash (optional): Line style for single-date milestones - "solid", "dash", "dot", or "dashdot". Default "dash".
+  \item width (optional): Line width in pixels for single-date milestones. Default 2.
+  \item fill_opacity (optional): Opacity for shaded areas (0-1). Default 0.15. Ignored for lines.
   \item label_position (optional): Label position - "top", "middle", or "bottom". Default "top".
 }
-Default NULL (no milestone lines).}
+Example with mixed types:
+\preformatted{
+milestones <- data.frame(
+  label = c("Kickoff", "Review Period", "Deadline"),
+  color = c("green", "blue", "red")
+)
+milestones$date <- list(
+  "01/15/2025",
+  c("03/01/2025", "03/31/2025"),
+  "12/31/2025"
+)}
+Default NULL (no milestone markers).}
 
 \item{color_config}{List or NULL. Configuration for chart colors. Structure depends on mode:
 \itemize{
@@ -119,6 +134,9 @@ If NULL, uses defaults shown above. Default NULL.}
   \item yaxis_label_width: Numeric, width of y-axis label area in pixels (default 300)
   \item yaxis_label_max_chars: Numeric or NULL, maximum characters for labels before truncating with "..." (NULL = no truncation)
   \item hover_popup_max_chars: Numeric, maximum characters per line in hover popups before wrapping to next line (default 50)
+  \item show_yaxis_labels: Logical, whether to show y-axis labels (default TRUE).
+    When FALSE, activity labels are hidden. If display_config$wbs$show_labels is TRUE,
+    WBS labels will still be shown; otherwise all y-axis labels are hidden.
 }
 Example: \preformatted{list(
   buffer_days = 30,
@@ -127,7 +145,8 @@ Example: \preformatted{list(
   y_scroll_position = NULL,
   yaxis_label_width = 300,
   yaxis_label_max_chars = NULL,
-  hover_popup_max_chars = 50
+  hover_popup_max_chars = 50,
+  show_yaxis_labels = TRUE
 )}
 If NULL, uses defaults shown above. Default NULL.}
 

@@ -13,4 +13,9 @@ There are currently no downstream dependencies for this package.
 
 ## Notes
 
-This is a minor update that adds the `tooltip_config` parameter, allowing users to display custom columns from their data in hover tooltips for both WBS items and activities.
+This is a feature update (v0.2.0) that adds:
+
+* Milestone areas: Support for date-range shaded areas in addition to vertical milestone lines
+* Y-axis label visibility control via `show_yaxis_labels` in `layout_config`
+* Auto-conversion of narrow milestone date ranges to vertical lines
+* Fixed milestone area opacity handling
