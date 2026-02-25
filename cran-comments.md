@@ -13,7 +13,9 @@ There are currently no downstream dependencies for this package.
 
 ## Notes
 
-This is a patch update (v0.2.2) that includes:
+This is a patch update (v0.2.3) that improves date parsing flexibility:
 
-* Fix: Milestone vertical lines now span the full chart height during scrolling instead of stopping at the visible viewport boundary
-* New: `display_config$milestone$hide_label_levels` to suppress milestone text annotations by level while preserving hover tooltips
+* Dates now accept both ISO YYYY-MM-DD and legacy MM/DD/YYYY formats, as well as Date
+  class objects. Fully backward-compatible with existing user data.
+* format_label() renders date placeholders in ISO YYYY-MM-DD.
+* Sample dataset updated to use ISO date strings.

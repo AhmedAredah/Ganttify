@@ -37,8 +37,13 @@ cat("Package : ganttify\n")
 cat("Version :", version, "\n")
 cat("Tarball :", tarball, "\n\n")
 
-# Step 6 — Submit to CRAN using devtools::submit_cran() (interactive confirmation)
-cat("Step 4: Submitting to CRAN...\n")
-cat("Note: Your pre-built tarball is at:", tarball, "\n\n")
-devtools::submit_cran()
-cat("✓ Submitted to CRAN. Watch your email for confirmation.\n")
+# Step 6 — Optionally submit to CRAN
+answer <- readline("Submit to CRAN? [y/N]: ")
+if (tolower(trimws(answer)) == "y") {
+  cat("\nStep 4: Submitting to CRAN...\n")
+  cat("Note: Your pre-built tarball is at:", tarball, "\n\n")
+  devtools::submit_cran()
+  cat("✓ Submitted to CRAN. Watch your email for confirmation.\n")
+} else {
+  cat("Skipped CRAN submission. Tarball is ready at:", tarball, "\n")
+}
