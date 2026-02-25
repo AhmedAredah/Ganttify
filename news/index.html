@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.3</span>
       </span>
     </div>
 
@@ -48,7 +48,26 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.2.2" id="ganttify-022">ganttify 0.2.2<a class="anchor" aria-label="anchor" href="#ganttify-022"></a></h2>
+<h2 class="page-header" data-toc-text="0.2.3" id="ganttify-023">ganttify 0.2.3<a class="anchor" aria-label="anchor" href="#ganttify-023"></a></h2>
+<div class="section level3">
+<h3 id="performance-0-2-3">Performance<a class="anchor" aria-label="anchor" href="#performance-0-2-3"></a></h3>
+<ul><li>
+<strong>Optimized date parsing</strong>: Dates now default to <code>MM/DD/YYYY</code> format with single-pass parsing. Dramatically faster on large datasets. Users can specify alternative format via <code>date_format</code> parameter.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="improvements-0-2-3">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-3"></a></h3>
+<ul><li>
+<strong>Flexible Date Formats</strong>: Activity and milestone dates accept <code>MM/DD/YYYY</code> (default, e.g. <code>"09/15/2024"</code>), <code>Date</code> class objects, or custom formats via optional <code>date_format</code> parameter (e.g. <code>"%Y-%m-%d"</code> for ISO).</li>
+<li>
+<code>parse_date_flex()</code> helper with configurable <code>date_format</code> parameter (default: <code>"%m/%d/%Y"</code>).</li>
+<li>Guard in <code>generate_hover_points()</code> handles reversed dates gracefully (End &lt; Start) without crashing.</li>
+<li>
+<code>format_label()</code> renders date placeholders in <code>MM/DD/YYYY</code>.</li>
+<li>Sample dataset (<code>test_project</code>) uses <code>MM/DD/YYYY</code> date strings.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.2" id="ganttify-022">ganttify 0.2.2<small>2026-02-25</small><a class="anchor" aria-label="anchor" href="#ganttify-022"></a></h2>
 <div class="section level3">
 <h3 id="bug-fix-0-2-2">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-2"></a></h3>
 <ul><li>
