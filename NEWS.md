@@ -1,3 +1,21 @@
+# ganttify 0.2.3
+
+## Performance
+
+* **Optimized date parsing**: Dates now default to `MM/DD/YYYY` format with single-pass parsing.
+  Dramatically faster on large datasets. Users can specify alternative format via `date_format` parameter.
+
+## Improvements
+
+* **Flexible Date Formats**: Activity and milestone dates accept `MM/DD/YYYY` (default, e.g. `"09/15/2024"`),
+  `Date` class objects, or custom formats via optional `date_format` parameter (e.g. `"%Y-%m-%d"` for ISO).
+* `parse_date_flex()` helper with configurable `date_format` parameter (default: `"%m/%d/%Y"`).
+* Guard in `generate_hover_points()` handles reversed dates gracefully (End < Start) without crashing.
+* `format_label()` renders date placeholders in `MM/DD/YYYY`.
+* Sample dataset (`test_project`) uses `MM/DD/YYYY` date strings.
+
+---
+
 # ganttify 0.2.2
 
 ## Bug Fix
