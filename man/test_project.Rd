@@ -19,10 +19,10 @@ A list with 3 components:
       \item WBS_ID: Associated WBS item identifier
       \item Activity_ID: Activity identifier (A1-A15)
       \item Activity_Name: Activity name (e.g., "Design UI", "Code Frontend")
-      \item Start_Date: Planned start date in MM/DD/YYYY format
-      \item End_Date: Planned end date in MM/DD/YYYY format
-      \item Start_Date_Actual: Actual start date in MM/DD/YYYY format (some NA for not started)
-      \item End_Date_Actual: Actual end date in MM/DD/YYYY format (some NA for in-progress)
+      \item Start_Date: Planned start date (YYYY-MM-DD or MM/DD/YYYY character or Date class)
+      \item End_Date: Planned end date (YYYY-MM-DD or MM/DD/YYYY character or Date class)
+      \item Start_Date_Actual: Actual start date (YYYY-MM-DD or MM/DD/YYYY character or Date class, some NA for not started)
+      \item End_Date_Actual: Actual end date (YYYY-MM-DD or MM/DD/YYYY character or Date class, some NA for in-progress)
     }
     Includes examples of on-time, delayed, ahead-of-schedule, and in-progress activities.
   }

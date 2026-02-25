@@ -24,10 +24,10 @@ NULL
 #'     \item WBS_ID (character): Associated WBS item identifier
 #'     \item Activity_ID (character): Unique activity identifier
 #'     \item Activity_Name (character): Activity name
-#'     \item Start_Date (character): Planned start date in MM/DD/YYYY format
-#'     \item End_Date (character): Planned end date in MM/DD/YYYY format
-#'     \item Start_Date_Actual (character, optional): Actual start date in MM/DD/YYYY format
-#'     \item End_Date_Actual (character, optional): Actual end date in MM/DD/YYYY format.
+#'     \item Start_Date (character or Date): Planned start date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class
+#'     \item End_Date (character or Date): Planned end date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class
+#'     \item Start_Date_Actual (character or Date, optional): Actual start date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class
+#'     \item End_Date_Actual (character or Date, optional): Actual end date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class.
 #'       If Start_Date_Actual is provided but End_Date_Actual is missing, the actual bar
 #'       will show from Start_Date_Actual to today (if today > Start_Date_Actual).
 #'     \item Additional columns (optional): Any extra columns (e.g., Status, Agency, Priority) are preserved
@@ -45,7 +45,7 @@ NULL
 #'   \itemize{
 #'     \item date (required): Either a single date (for vertical line) or a vector of 2 dates
 #'       (for shaded area). Use a list column to mix both types. Dates can be character
-#'       in MM/DD/YYYY format or Date objects.
+#'       in MM/DD/YYYY format (e.g. "09/15/2024") or Date objects.
 #'     \item label (required): Text label to display on the milestone
 #'     \item color (optional): Color for line or area (e.g., "red", "#FF0000"). Defaults to color palette.
 #'     \item dash (optional): Line style for single-date milestones - "solid", "dash", "dot", or "dashdot". Default "dash".
@@ -74,7 +74,7 @@ NULL
 #'     color = c("blue", "green", "red"),
 #'     label_level = c(1, 2, 1)  # Level 1 labels appear above level 2
 #'   )
-#'   milestones$date <- list("01/15/2025", "01/20/2025", "06/30/2025")}
+#'   milestones$date <- list("2025-01-15", "2025-01-20", "2025-06-30")}
 #'   Default NULL (no milestone markers).
 #' @param color_config List or NULL. Configuration for chart colors. Structure depends on mode:
 #'   \itemize{
@@ -361,12 +361,35 @@ Ganttify <- function(
     return(label)
   }
 
+  # Helper function to parse dates with configurable format (MM/DD/YYYY by default)
+  parse_date_flex <- function(x, field_name, date_format = "%m/%d/%Y") {
+    if (inherits(x, "Date")) return(x)                      # pass-through
+
+    parsed <- tryCatch(
+      as.Date(x, format = date_format),
+      error = function(e) rep(NA_Date_, length(x))
+    )
+
+    bad <- !is.na(x) & is.na(parsed)
+    if (any(bad)) {
+      stop(sprintf(
+        "Date parsing error in '%s'. Please use %s format or Date class.",
+        field_name,
+        date_format
+      ))
+    }
+    return(parsed)
+  }
+
   # Helper function to generate intermediate points for hover coverage
   # Adapts point density based on activity duration
   generate_hover_points <- function(start_date, end_date) {
     duration <- as.numeric(end_date - start_date)
 
-    if (duration == 0) {
+    if (duration < 0) {
+      # Reversed dates (end before start) — return endpoints only, no seq
+      return(c(start_date, end_date))
+    } else if (duration == 0) {
       # Same day: just 2 points (start and end)
       return(c(start_date, start_date))
     } else if (duration <= 7) {
@@ -449,17 +472,13 @@ Ganttify <- function(
   has_actual_dates <- all(c("Start_Date_Actual", "End_Date_Actual") %in% colnames(activities))
 
   # Parse planned dates
-  activities$Start_Date <- as.Date(activities$Start_Date, format = "%m/%d/%Y")
-  activities$End_Date <- as.Date(activities$End_Date, format = "%m/%d/%Y")
-
-  if (any(is.na(activities$Start_Date)) || any(is.na(activities$End_Date))) {
-    stop("Date parsing error. Please ensure planned dates are in MM/DD/YYYY format")
-  }
+  activities$Start_Date <- parse_date_flex(activities$Start_Date, "Start_Date")
+  activities$End_Date   <- parse_date_flex(activities$End_Date,   "End_Date")
 
   # Parse actual dates if present
   if (has_actual_dates) {
-    activities$Start_Date_Actual <- as.Date(activities$Start_Date_Actual, format = "%m/%d/%Y")
-    activities$End_Date_Actual <- as.Date(activities$End_Date_Actual, format = "%m/%d/%Y")
+    activities$Start_Date_Actual <- parse_date_flex(activities$Start_Date_Actual, "Start_Date_Actual")
+    activities$End_Date_Actual   <- parse_date_flex(activities$End_Date_Actual,   "End_Date_Actual")
 
     # Handle missing End_Date_Actual: use today if after Start_Date_Actual
     today_date <- Sys.Date()
@@ -516,21 +535,12 @@ Ganttify <- function(
       if (length(date_val) == 1) {
         # Single date - vertical line
         milestone_data$milestone_type[i] <- "line"
-        if (is.character(date_val)) {
-          milestone_data$date[i] <- as.Date(date_val, format = "%m/%d/%Y")
-        } else {
-          milestone_data$date[i] <- as.Date(date_val)
-        }
+        milestone_data$date[i] <- parse_date_flex(date_val, "milestone date")
       } else if (length(date_val) == 2) {
         # Two dates - shaded area
         milestone_data$milestone_type[i] <- "area"
-        if (is.character(date_val)) {
-          milestone_data$start_date[i] <- as.Date(date_val[1], format = "%m/%d/%Y")
-          milestone_data$end_date[i] <- as.Date(date_val[2], format = "%m/%d/%Y")
-        } else {
-          milestone_data$start_date[i] <- as.Date(date_val[1])
-          milestone_data$end_date[i] <- as.Date(date_val[2])
-        }
+        milestone_data$start_date[i] <- parse_date_flex(date_val[1], "milestone start date")
+        milestone_data$end_date[i] <- parse_date_flex(date_val[2], "milestone end date")
       } else {
         stop(paste0("Invalid date format for milestone '", milestone_lines$label[i],
                     "'. Date must be a single value or a vector of 2 values."))
@@ -542,11 +552,11 @@ Ganttify <- function(
     area_rows <- milestone_data$milestone_type == "area"
 
     if (any(line_rows) && any(is.na(milestone_data$date[line_rows]))) {
-      stop("Invalid dates in milestone_lines. Please use MM/DD/YYYY format or Date objects")
+      stop("Invalid dates in milestone_lines. Please use YYYY-MM-DD or MM/DD/YYYY formats or Date class")
     }
     if (any(area_rows) && (any(is.na(milestone_data$start_date[area_rows])) ||
                            any(is.na(milestone_data$end_date[area_rows])))) {
-      stop("Invalid date range in milestone_lines. Please use MM/DD/YYYY format or Date objects")
+      stop("Invalid date range in milestone_lines. Please use YYYY-MM-DD or MM/DD/YYYY formats or Date class")
     }
 
     # Add default values for optional columns
