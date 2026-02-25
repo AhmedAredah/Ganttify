@@ -27,10 +27,10 @@ and Parent (character). Parent should be "None" or "" for root level items.}
   \item WBS_ID (character): Associated WBS item identifier
   \item Activity_ID (character): Unique activity identifier
   \item Activity_Name (character): Activity name
-  \item Start_Date (character or Date): Planned start date in YYYY-MM-DD or MM/DD/YYYY format (e.g. "2024-09-15") or Date class
-  \item End_Date (character or Date): Planned end date in YYYY-MM-DD or MM/DD/YYYY format (e.g. "2024-09-15") or Date class
-  \item Start_Date_Actual (character or Date, optional): Actual start date in YYYY-MM-DD or MM/DD/YYYY format (e.g. "2024-09-15") or Date class
-  \item End_Date_Actual (character or Date, optional): Actual end date in YYYY-MM-DD or MM/DD/YYYY format (e.g. "2024-09-15") or Date class.
+  \item Start_Date (character or Date): Planned start date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class
+  \item End_Date (character or Date): Planned end date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class
+  \item Start_Date_Actual (character or Date, optional): Actual start date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class
+  \item End_Date_Actual (character or Date, optional): Actual end date in MM/DD/YYYY format (e.g. "09/15/2024") or Date class.
     If Start_Date_Actual is provided but End_Date_Actual is missing, the actual bar
     will show from Start_Date_Actual to today (if today > Start_Date_Actual).
   \item Additional columns (optional): Any extra columns (e.g., Status, Agency, Priority) are preserved
@@ -51,7 +51,7 @@ If provided, must be a data frame with the following columns:
 \itemize{
   \item date (required): Either a single date (for vertical line) or a vector of 2 dates
     (for shaded area). Use a list column to mix both types. Dates can be character
-    in YYYY-MM-DD or MM/DD/YYYY format (e.g. "2024-09-15") or Date objects.
+    in MM/DD/YYYY format (e.g. "09/15/2024") or Date objects.
   \item label (required): Text label to display on the milestone
   \item color (optional): Color for line or area (e.g., "red", "#FF0000"). Defaults to color palette.
   \item dash (optional): Line style for single-date milestones - "solid", "dash", "dot", or "dashdot". Default "dash".
