@@ -345,7 +345,8 @@ activities <- data.frame(
 )
 ```
 
-**Note:** Dates must be in `MM/DD/YYYY` format.
+**Note:** Dates must be in `MM/DD/YYYY` format (e.g. `"01/01/2024"`) or passed as R `Date` objects.
+To use a different format (e.g. `YYYY-MM-DD`), see `?Ganttify` for the date_format parameter.
 
 ### Color Configuration
 
