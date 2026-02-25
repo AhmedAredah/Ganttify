@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.2</span>
       </span>
     </div>
 
@@ -48,7 +48,20 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.2.1" id="ganttify-021">ganttify 0.2.1<a class="anchor" aria-label="anchor" href="#ganttify-021"></a></h2>
+<h2 class="page-header" data-toc-text="0.2.2" id="ganttify-022">ganttify 0.2.2<a class="anchor" aria-label="anchor" href="#ganttify-022"></a></h2>
+<div class="section level3">
+<h3 id="bug-fix-0-2-2">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-2"></a></h3>
+<ul><li>
+<strong>Milestone Lines Extend Full Height</strong>: Milestone vertical lines now span the entire chart height instead of stopping at the visible viewport boundary when scrolling through rows. Lines drawn with <code>y = c(0.5, total_rows + 0.5)</code> for consistent visibility across the full chart.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="new-features-0-2-2">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-2-2"></a></h3>
+<ul><li>
+<strong>Hide Milestone Labels by Level</strong>: Added <code>display_config$milestone$hide_label_levels</code> parameter to suppress text annotations for milestones at specific <code>label_level</code> values while keeping hover tooltips intact. For example, set to <code>c(1)</code> to hide all level-1 milestone labels. Default <code>NULL</code> shows all labels (fully backwards-compatible).</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.1" id="ganttify-021">ganttify 0.2.1<small>2026-01-22</small><a class="anchor" aria-label="anchor" href="#ganttify-021"></a></h2>
 <div class="section level3">
 <h3 id="new-features-0-2-1">New Features<a class="anchor" aria-label="anchor" href="#new-features-0-2-1"></a></h3>
 <ul><li>
