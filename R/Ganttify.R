@@ -365,10 +365,7 @@ Ganttify <- function(
   parse_date_flex <- function(x, field_name, date_format = "%m/%d/%Y") {
     if (inherits(x, "Date")) return(x)                      # pass-through
 
-    parsed <- tryCatch(
-      as.Date(x, format = date_format),
-      error = function(e) rep(NA_Date_, length(x))
-    )
+    parsed <- as.Date(x, format = date_format)
 
     bad <- !is.na(x) & is.na(parsed)
     if (any(bad)) {
