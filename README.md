@@ -221,6 +221,28 @@ Ganttify(
   milestone_lines = milestones
 )
 
+# Hide level-1 milestone labels (text annotation hidden, hover tooltip still works)
+milestones <- data.frame(
+  label = c("Kickoff", "Budget Approval", "Review Period", "Go Live"),
+  color = c("blue", "green", "purple", "red"),
+  label_level = c(1, 2, 1, 2)
+)
+milestones$date <- list(
+  "01/05/2025",
+  "01/10/2025",
+  c("02/10/2025", "02/20/2025"),
+  "03/31/2025"
+)
+
+Ganttify(
+  wbs_structure = test_project$wbs_structure,
+  activities = test_project$activities,
+  milestone_lines = milestones,
+  display_config = list(
+    milestone = list(hide_label_levels = c(1))
+  )
+)
+
 # Milestone custom tooltips
 milestones <- data.frame(
   label = c("Kickoff", "Review Period"),
@@ -367,7 +389,7 @@ Key parameters for the `Ganttify()` function:
 
 ### Configuration Objects
 - `color_config`: List configuring chart colors (mode: "wbs", "uniform", or "attribute")
-- `display_config`: List controlling visibility (WBS/activity show, labels, names on bars)
+- `display_config`: List controlling visibility (WBS/activity show, labels, names on bars, milestone label hiding by level)
 - `label_config`: List with label templates for y-axis and bars (supports placeholders)
 - `bar_config`: List with bar styling (opacity, height, dim_opacity, dim_past_activities)
 - `layout_config`: List with layout settings (buffer_days, indent_size, max_visible_rows, y_scroll_position, yaxis_label_width, yaxis_label_max_chars, hover_popup_max_chars, show_yaxis_labels)

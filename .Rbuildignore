@@ -10,3 +10,4 @@
 ^\.gitignore$
 ^CRAN-SUBMISSION$
 ^cran-comments\.md$
+^_regenerate_docs\.R$

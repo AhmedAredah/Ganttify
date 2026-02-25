@@ -1,3 +1,15 @@
+# ganttify 0.2.2
+
+## Bug Fix
+
+* **Milestone Lines Extend Full Height**: Milestone vertical lines now span the entire chart height instead of stopping at the visible viewport boundary when scrolling through rows. Lines drawn with `y = c(0.5, total_rows + 0.5)` for consistent visibility across the full chart.
+
+## New Features
+
+* **Hide Milestone Labels by Level**: Added `display_config$milestone$hide_label_levels` parameter to suppress text annotations for milestones at specific `label_level` values while keeping hover tooltips intact. For example, set to `c(1)` to hide all level-1 milestone labels. Default `NULL` shows all labels (fully backwards-compatible).
+
+---
+
 # ganttify 0.2.1
 
 ## New Features

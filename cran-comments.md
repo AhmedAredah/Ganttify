@@ -13,9 +13,7 @@ There are currently no downstream dependencies for this package.
 
 ## Notes
 
-This is a feature update (v0.2.0) that adds:
+This is a patch update (v0.2.2) that includes:
 
-* Milestone areas: Support for date-range shaded areas in addition to vertical milestone lines
-* Y-axis label visibility control via `show_yaxis_labels` in `layout_config`
-* Auto-conversion of narrow milestone date ranges to vertical lines
-* Fixed milestone area opacity handling
+* Fix: Milestone vertical lines now span the full chart height during scrolling instead of stopping at the visible viewport boundary
+* New: `display_config$milestone$hide_label_levels` to suppress milestone text annotations by level while preserving hover tooltips

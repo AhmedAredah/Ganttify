@@ -93,10 +93,15 @@ NULL
 #'   \itemize{
 #'     \item wbs: List with show (logical), show_labels (logical), show_names_on_bars (logical)
 #'     \item activity: List with show (logical), show_names_on_bars (logical)
+#'     \item milestone: List with hide_label_levels (integer vector or NULL). Suppresses
+#'       visible text annotations for milestones at the specified label_level values
+#'       (e.g. \code{c(1)}, \code{c(2)}, or \code{c(1, 2)}). Hover tooltips are unaffected.
+#'       Default NULL (all labels shown).
 #'   }
 #'   Example: \preformatted{list(
 #'     wbs = list(show = TRUE, show_labels = TRUE, show_names_on_bars = TRUE),
-#'     activity = list(show = TRUE, show_names_on_bars = FALSE)
+#'     activity = list(show = TRUE, show_names_on_bars = FALSE),
+#'     milestone = list(hide_label_levels = c(1))
 #'   )}
 #'   If NULL, uses defaults shown above. Default NULL.
 #' @param label_config List or NULL. Template strings for labels. Structure:
@@ -730,6 +735,12 @@ Ganttify <- function(
   }
   show_activities <- display_config$activity$show %||% TRUE
   show_activity_names_on_bars <- display_config$activity$show_names_on_bars %||% FALSE
+
+  # Extract milestone display settings
+  if (is.null(display_config$milestone)) {
+    display_config$milestone <- list(hide_label_levels = NULL)
+  }
+  hide_milestone_label_levels <- display_config$milestone$hide_label_levels
 
   # ============================================
   # 1E. PARSE AND VALIDATE LABEL CONFIG
@@ -1509,7 +1520,7 @@ Ganttify <- function(
             type = "scatter",
             mode = "lines",
             x = c(milestone_date, milestone_date),
-            y = c(y_range_min, y_range_max),
+            y = c(0.5, total_rows + 0.5),
             line = list(
               color = milestone_data$color[i],
               width = milestone_data$width[i],
@@ -1554,25 +1565,28 @@ Ganttify <- function(
             if (milestone_data$label_level[i] == 1) 15 else -5
           }
 
-          # Add text annotation for the milestone label
-          text_annotations <- c(text_annotations, list(list(
-            x = milestone_date,
-            y = label_y_position,
-            text = milestone_data$label[i],
-            xanchor = "center",
-            yanchor = label_yanchor,
-            yshift = label_yshift,
-            showarrow = FALSE,
-            font = list(
-              size = 10,
-              color = milestone_data$color[i],
-              family = "Arial, sans-serif"
-            ),
-            bgcolor = "rgba(255, 255, 255, 0.8)",
-            bordercolor = milestone_data$color[i],
-            borderwidth = 1,
-            borderpad = 3
-          )))
+          # Add text annotation for the milestone label (skipped if label_level is hidden)
+          if (is.null(hide_milestone_label_levels) ||
+              !milestone_data$label_level[i] %in% hide_milestone_label_levels) {
+            text_annotations <- c(text_annotations, list(list(
+              x = milestone_date,
+              y = label_y_position,
+              text = milestone_data$label[i],
+              xanchor = "center",
+              yanchor = label_yanchor,
+              yshift = label_yshift,
+              showarrow = FALSE,
+              font = list(
+                size = 10,
+                color = milestone_data$color[i],
+                family = "Arial, sans-serif"
+              ),
+              bgcolor = "rgba(255, 255, 255, 0.8)",
+              bordercolor = milestone_data$color[i],
+              borderwidth = 1,
+              borderpad = 3
+            )))
+          }
         }
 
       } else if (milestone_data$milestone_type[i] == "area") {
@@ -1597,7 +1611,7 @@ Ganttify <- function(
               type = "scatter",
               mode = "lines",
               x = c(mid_date, mid_date),
-              y = c(y_range_min, y_range_max),
+              y = c(0.5, total_rows + 0.5),
               line = list(
                 color = milestone_data$color[i],
                 width = milestone_data$width[i],
@@ -1643,24 +1657,27 @@ Ganttify <- function(
               if (milestone_data$label_level[i] == 1) 15 else -5
             }
 
-            text_annotations <- c(text_annotations, list(list(
-              x = mid_date,
-              y = label_y_position,
-              text = milestone_data$label[i],
-              xanchor = "center",
-              yanchor = label_yanchor,
-              yshift = label_yshift,
-              showarrow = FALSE,
-              font = list(
-                size = 10,
-                color = milestone_data$color[i],
-                family = "Arial, sans-serif"
-              ),
-              bgcolor = "rgba(255, 255, 255, 0.8)",
-              bordercolor = milestone_data$color[i],
-              borderwidth = 1,
-              borderpad = 3
-            )))
+            if (is.null(hide_milestone_label_levels) ||
+                !milestone_data$label_level[i] %in% hide_milestone_label_levels) {
+              text_annotations <- c(text_annotations, list(list(
+                x = mid_date,
+                y = label_y_position,
+                text = milestone_data$label[i],
+                xanchor = "center",
+                yanchor = label_yanchor,
+                yshift = label_yshift,
+                showarrow = FALSE,
+                font = list(
+                  size = 10,
+                  color = milestone_data$color[i],
+                  family = "Arial, sans-serif"
+                ),
+                bgcolor = "rgba(255, 255, 255, 0.8)",
+                bordercolor = milestone_data$color[i],
+                borderwidth = 1,
+                borderpad = 3
+              )))
+            }
 
           } else {
             # Wide enough - draw as shaded area
@@ -1738,25 +1755,28 @@ Ganttify <- function(
               if (milestone_data$label_level[i] == 1) 15 else -5
             }
 
-            # Add text annotation for the milestone label (centered on area)
-            text_annotations <- c(text_annotations, list(list(
-              x = mid_date,
-              y = label_y_position,
-              text = milestone_data$label[i],
-              xanchor = "center",
-              yanchor = label_yanchor,
-              yshift = label_yshift,
-              showarrow = FALSE,
-              font = list(
-                size = 10,
-                color = milestone_data$color[i],
-                family = "Arial, sans-serif"
-              ),
-              bgcolor = "rgba(255, 255, 255, 0.8)",
-              bordercolor = milestone_data$color[i],
-              borderwidth = 1,
-              borderpad = 3
-            )))
+            # Add text annotation for the milestone label (centered on area, skipped if label_level is hidden)
+            if (is.null(hide_milestone_label_levels) ||
+                !milestone_data$label_level[i] %in% hide_milestone_label_levels) {
+              text_annotations <- c(text_annotations, list(list(
+                x = mid_date,
+                y = label_y_position,
+                text = milestone_data$label[i],
+                xanchor = "center",
+                yanchor = label_yanchor,
+                yshift = label_yshift,
+                showarrow = FALSE,
+                font = list(
+                  size = 10,
+                  color = milestone_data$color[i],
+                  family = "Arial, sans-serif"
+                ),
+                bgcolor = "rgba(255, 255, 255, 0.8)",
+                bordercolor = milestone_data$color[i],
+                borderwidth = 1,
+                borderpad = 3
+              )))
+            }
           }
         }
       }

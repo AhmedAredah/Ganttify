@@ -101,10 +101,15 @@ If NULL, uses mode="wbs" with default color palette. Default NULL.}
 \itemize{
   \item wbs: List with show (logical), show_labels (logical), show_names_on_bars (logical)
   \item activity: List with show (logical), show_names_on_bars (logical)
+  \item milestone: List with hide_label_levels (integer vector or NULL). Suppresses
+    visible text annotations for milestones at the specified label_level values
+    (e.g. \code{c(1)}, \code{c(2)}, or \code{c(1, 2)}). Hover tooltips are unaffected.
+    Default NULL (all labels shown).
 }
 Example: \preformatted{list(
   wbs = list(show = TRUE, show_labels = TRUE, show_names_on_bars = TRUE),
-  activity = list(show = TRUE, show_names_on_bars = FALSE)
+  activity = list(show = TRUE, show_names_on_bars = FALSE),
+  milestone = list(hide_label_levels = c(1))
 )}
 If NULL, uses defaults shown above. Default NULL.}
 
