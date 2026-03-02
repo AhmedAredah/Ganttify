@@ -168,15 +168,18 @@ If NULL, uses defaults shown above. Default NULL.}
 
 \item{tooltip_config}{List or NULL. Configuration for custom tooltip fields. Structure:
 \itemize{
-  \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips
-  \item activity: Character vector of column names from activities to display in activity tooltips
-  \item milestone: Character vector of column names from milestone_lines to display in milestone tooltips
+  \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips.
+    Use a named vector to set a custom display label: \code{c(col_name = "Display Label")}.
+  \item activity: Character vector of column names from activities to display in activity tooltips.
+    Use a named vector to set a custom display label: \code{c(col_name = "Display Label")}.
+  \item milestone: Character vector of column names from milestone_lines to display in milestone tooltips.
+    Use a named vector to set a custom display label: \code{c(col_name = "Display Label")}.
 }
-Fields that don't exist in the data or have NA/empty values will be automatically hidden.
-Example: \preformatted{list(
-  wbs = c("Owner", "Budget"),
-  activity = c("Status", "Agency", "Priority", "Notes"),
-  milestone = c("Description", "Owner", "Priority")
+Fields that don't exist in the data or have NA/empty values are automatically hidden.
+Named and unnamed elements can be mixed freely. Example: \preformatted{list(
+  wbs      = c(Owner = "Project Owner", Budget = "Total Budget ($)"),
+  activity = c(activity_details = "Activity Details", "Status"),
+  milestone = c(Description = "Milestone Description")
 )}
 If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.}
 }
