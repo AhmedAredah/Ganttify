@@ -10,6 +10,11 @@ cat("Step 1: Regenerating documentation...\n")
 devtools::document()
 cat("✓ Documentation regenerated.\n\n")
 
+# Step 2.5 — Install globally so it's available in other projects
+cat("Step 1.5: Installing ganttify globally...\n")
+devtools::install(upgrade = FALSE)  # Skip interactive package update prompts
+cat("✓ Installed globally to your R library.\n\n")
+
 # Step 3 — Run full R CMD check (CRAN-style: cran = TRUE, remote checks included)
 cat("Step 2: Running R CMD check (CRAN mode)...\n")
 check_results <- withCallingHandlers(

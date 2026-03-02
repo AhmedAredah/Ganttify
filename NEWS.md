@@ -1,3 +1,13 @@
+# ganttify 0.2.4
+
+## Bug Fix
+
+* **Milestone line hover now works along the full line height**: Previously, hover tooltips on single-date milestone vertical lines only triggered near the top or bottom endpoints. The hover mechanism is now a separate invisible marker trace distributed along the full height of the line, making the hover responsive anywhere along the line. Applied to both single-date vertical lines and narrow date-range milestones that fall back to vertical lines.
+
+* **Reduced hover sensitivity for milestone lines**: Lowered the hover detection distance from 20px to 10px, making the hover trigger only when the cursor is very close to the milestone line (within ~2.5 days at typical chart zoom), preventing accidental tooltip triggers when hovering nearby activities.
+
+---
+
 # ganttify 0.2.3
 
 ## Performance

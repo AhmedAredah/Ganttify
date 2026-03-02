@@ -411,6 +411,13 @@ Ganttify <- function(
     }
   }
 
+  # Helper function to generate intermediate y-points for vertical line hover coverage
+  # Step of 1.0 from y_start (= 0.5) places points at 0.5, 1.5, 2.5, ...
+  # This keeps milestone hover points between activity row centers (1, 2, 3, ...)
+  generate_hover_points_y <- function(y_start, y_end) {
+    seq(y_start, y_end, by = 1.0)
+  }
+
   # Helper function to wrap text for hover popups
   wrap_text_for_hover <- function(text, max_chars) {
     # If no limit or text is short enough, return as-is
@@ -1522,7 +1529,7 @@ Ganttify <- function(
 
         # Only show the line if it falls within the plot range
         if (milestone_date >= plot_min_date && milestone_date <= plot_max_date) {
-          # Add the vertical line
+          # Add the VISUAL vertical line (no hover)
           fig <- fig %>% add_trace(
             type = "scatter",
             mode = "lines",
@@ -1534,6 +1541,18 @@ Ganttify <- function(
               dash = milestone_data$dash[i]
             ),
             name = milestone_data$label[i],
+            showlegend = FALSE,
+            hoverinfo = "skip"
+          )
+
+          # Add HOVER markers — invisible trace with points along the full height
+          hover_y_ms <- generate_hover_points_y(0.5, total_rows + 0.5)
+          fig <- fig %>% add_trace(
+            type = "scatter",
+            mode = "markers",
+            x = rep(milestone_date, length(hover_y_ms)),
+            y = hover_y_ms,
+            marker = list(color = "rgba(0,0,0,0)", size = 10),
             showlegend = FALSE,
             hoverinfo = "text",
             hovertext = paste0(
@@ -1614,6 +1633,7 @@ Ganttify <- function(
             # Too narrow - draw as a vertical line at the midpoint
             mid_date <- start_date + (end_date - start_date) / 2
 
+            # Add the VISUAL vertical line (no hover)
             fig <- fig %>% add_trace(
               type = "scatter",
               mode = "lines",
@@ -1625,6 +1645,18 @@ Ganttify <- function(
                 dash = milestone_data$dash[i]
               ),
               name = milestone_data$label[i],
+              showlegend = FALSE,
+              hoverinfo = "skip"
+            )
+
+            # Add HOVER markers — invisible trace with points along the full height
+            hover_y_ms <- generate_hover_points_y(0.5, total_rows + 0.5)
+            fig <- fig %>% add_trace(
+              type = "scatter",
+              mode = "markers",
+              x = rep(mid_date, length(hover_y_ms)),
+              y = hover_y_ms,
+              marker = list(color = "rgba(0,0,0,0)", size = 10),
               showlegend = FALSE,
               hoverinfo = "text",
               hovertext = paste0(
@@ -1852,6 +1884,7 @@ Ganttify <- function(
     annotations = text_annotations,
     shapes = if (length(milestone_shapes) > 0) milestone_shapes else NULL,
     hovermode = "closest",
+    hoverdistance = 10,  # Reduce from default 20px to make milestone hover trigger only very close to the line
     plot_bgcolor = "white",  # Changed to white for better contrast with alternating backgrounds
     paper_bgcolor = "white",
     margin = list(l = effective_label_width, r = 50, t = 80, b = 80),
