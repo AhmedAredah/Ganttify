@@ -1,3 +1,15 @@
+# ganttify 0.2.5
+
+## New Feature
+
+* **Custom tooltip field labels**: `tooltip_config` now supports named character vectors
+  to set friendly display labels for custom tooltip fields. Use
+  `c(column_name = "Display Label")` instead of `c("column_name")` to control what
+  label appears in the hover tooltip. Unnamed elements continue to use the column name
+  as the label (fully backward-compatible).
+
+---
+
 # ganttify 0.2.4
 
 ## Bug Fix

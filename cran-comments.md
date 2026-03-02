@@ -13,14 +13,11 @@ There are currently no downstream dependencies for this package.
 
 ## Notes
 
-This is a patch update (v0.2.4) that fixes milestone hover interaction:
+This is a patch update (v0.2.5) adding custom display labels for tooltip fields:
 
-* **Milestone vertical lines now show their hover tooltip along the entire line height**,
-  not just at the top/bottom endpoints. The hover mechanism now uses a separate invisible
-  marker trace distributed along the line (same pattern as area milestones).
+* **tooltip_config now accepts named character vectors** so users can control the label
+  shown for each custom field in hover tooltips. Use `c(column_name = "Display Label")`
+  syntax to display "Activity Details" instead of the raw column name "activity_details".
 
-* **Reduced hover detection distance** from 20px to 10px for tighter, more precise hover
-  behavior. The hover now triggers only when very close to the milestone line (~2.5 days
-  horizontally at typical zoom), preventing accidental triggers on nearby activities.
-
-* No API changes — fully backward-compatible with all existing code.
+* Fully backward-compatible — existing `tooltip_config` usage with plain character vectors
+  continues to work unchanged. Named elements can be mixed with unnamed elements.

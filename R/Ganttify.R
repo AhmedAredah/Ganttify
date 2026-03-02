@@ -156,15 +156,18 @@ NULL
 #'   If NULL, uses defaults shown above. Default NULL.
 #' @param tooltip_config List or NULL. Configuration for custom tooltip fields. Structure:
 #'   \itemize{
-#'     \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips
-#'     \item activity: Character vector of column names from activities to display in activity tooltips
-#'     \item milestone: Character vector of column names from milestone_lines to display in milestone tooltips
+#'     \item wbs: Character vector of column names from wbs_structure to display in WBS tooltips.
+#'       Use a named vector to set a custom display label: \code{c(col_name = "Display Label")}.
+#'     \item activity: Character vector of column names from activities to display in activity tooltips.
+#'       Use a named vector to set a custom display label: \code{c(col_name = "Display Label")}.
+#'     \item milestone: Character vector of column names from milestone_lines to display in milestone tooltips.
+#'       Use a named vector to set a custom display label: \code{c(col_name = "Display Label")}.
 #'   }
-#'   Fields that don't exist in the data or have NA/empty values will be automatically hidden.
-#'   Example: \preformatted{list(
-#'     wbs = c("Owner", "Budget"),
-#'     activity = c("Status", "Agency", "Priority", "Notes"),
-#'     milestone = c("Description", "Owner", "Priority")
+#'   Fields that don't exist in the data or have NA/empty values are automatically hidden.
+#'   Named and unnamed elements can be mixed freely. Example: \preformatted{list(
+#'     wbs      = c(Owner = "Project Owner", Budget = "Total Budget ($)"),
+#'     activity = c(activity_details = "Activity Details", "Status"),
+#'     milestone = c(Description = "Milestone Description")
 #'   )}
 #'   If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.
 #'
@@ -851,22 +854,25 @@ Ganttify <- function(
   }
 
   # Extract custom tooltip fields for WBS
+  # Note: Do not use as.character() as it strips names attribute from named vectors
   tooltip_wbs_fields <- if (!is.null(tooltip_config$wbs)) {
-    as.character(tooltip_config$wbs)
+    tooltip_config$wbs
   } else {
     character(0)
   }
 
   # Extract custom tooltip fields for activities
+  # Note: Do not use as.character() as it strips names attribute from named vectors
   tooltip_activity_fields <- if (!is.null(tooltip_config$activity)) {
-    as.character(tooltip_config$activity)
+    tooltip_config$activity
   } else {
     character(0)
   }
 
   # Extract custom tooltip fields for milestones
+  # Note: Do not use as.character() as it strips names attribute from named vectors
   tooltip_milestone_fields <- if (!is.null(tooltip_config$milestone)) {
-    as.character(tooltip_config$milestone)
+    tooltip_config$milestone
   } else {
     character(0)
   }
@@ -878,14 +884,27 @@ Ganttify <- function(
 
     tooltip_parts <- character(0)
 
-    for (field in fields) {
-      # Check if field exists in data source
-      if (!field %in% colnames(data_source)) {
+    # Preserve names for custom display labels (named vector: c(col_name = "Display Label"))
+    field_names <- names(fields)
+
+    for (j in seq_along(fields)) {
+      # Column name for data access: use the name if provided, else the value (legacy)
+      col_name <- if (!is.null(field_names) && nzchar(trimws(field_names[j]))) {
+        field_names[j]
+      } else {
+        unname(fields[j])
+      }
+
+      # Display label for tooltip: always the value
+      display_label <- unname(fields[j])
+
+      # Check if column exists in data source
+      if (!col_name %in% colnames(data_source)) {
         next
       }
 
       # Get the value
-      value <- data_row[[field]]
+      value <- data_row[[col_name]]
 
       # Skip if value is NA, NULL, or empty string
       if (is.null(value) || length(value) == 0) next
@@ -902,7 +921,7 @@ Ganttify <- function(
       # Wrap text if needed
       wrapped_value <- wrap_text_for_hover(value, max_chars)
 
-      tooltip_parts <- c(tooltip_parts, paste0(field, ": ", wrapped_value))
+      tooltip_parts <- c(tooltip_parts, paste0(display_label, ": ", wrapped_value))
     }
 
     if (length(tooltip_parts) == 0) return("")
