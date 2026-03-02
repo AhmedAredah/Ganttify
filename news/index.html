@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.3</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.4</span>
       </span>
     </div>
 
@@ -47,6 +47,14 @@
       <small>Source: <a href="https://github.com/AhmedAredah/Ganttify/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.4" id="ganttify-024">ganttify 0.2.4<a class="anchor" aria-label="anchor" href="#ganttify-024"></a></h2>
+<div class="section level3">
+<h3 id="bug-fix-0-2-4">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-4"></a></h3>
+<ul><li><p><strong>Milestone line hover now works along the full line height</strong>: Previously, hover tooltips on single-date milestone vertical lines only triggered near the top or bottom endpoints. The hover mechanism is now a separate invisible marker trace distributed along the full height of the line, making the hover responsive anywhere along the line. Applied to both single-date vertical lines and narrow date-range milestones that fall back to vertical lines.</p></li>
+<li><p><strong>Reduced hover sensitivity for milestone lines</strong>: Lowered the hover detection distance from 20px to 10px, making the hover trigger only when the cursor is very close to the milestone line (within ~2.5 days at typical chart zoom), preventing accidental tooltip triggers when hovering nearby activities.</p></li>
+</ul><hr></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.2.3" id="ganttify-023">ganttify 0.2.3<a class="anchor" aria-label="anchor" href="#ganttify-023"></a></h2>
 <div class="section level3">
