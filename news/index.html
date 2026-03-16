@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.5</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.6</span>
       </span>
     </div>
 
@@ -48,7 +48,27 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.2.5" id="ganttify-025">ganttify 0.2.5<a class="anchor" aria-label="anchor" href="#ganttify-025"></a></h2>
+<h2 class="page-header" data-toc-text="0.2.6" id="ganttify-026">ganttify 0.2.6<a class="anchor" aria-label="anchor" href="#ganttify-026"></a></h2>
+<div class="section level3">
+<h3 id="improvements-0-2-6">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-6"></a></h3>
+<ul><li><p><strong>Cleaner hover tooltips</strong>: Removed redundant “Type: WBS”, “Type: Activity”, and “Type: Milestone” lines from all hover popups. The chart element type is already visually apparent from bar shape and color.</p></li>
+<li><p><strong>Bold tooltip labels</strong>: All field labels in hover popups are now bold for improved scanability — applies to both built-in fields (Start, End, Duration, Variance, Date) and user-provided custom fields via <code>tooltip_config</code>.</p></li>
+<li><p><strong>Variance spacing</strong>: Added a blank separator line after the Variance row in activity tooltips that show both planned and actual bars, visually separating the core date fields from any custom tooltip fields that follow.</p></li>
+<li><p><strong>X-axis position control</strong>: New <code>xaxis_position</code> key in <code>layout_config</code> lets users place the time axis at <code>"bottom"</code> (default), <code>"top"</code>, or <code>"both"</code>. Use <code>"top"</code> to keep the date axis visible when scrolling through long charts, or <code>"both"</code> to show tick labels on both edges simultaneously.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="documentation-0-2-6">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-2-6"></a></h3>
+<ul><li><p>Updated <code>tooltip_config</code> parameter description: removed stale mention of “Type” from the list of default tooltip fields.</p></li>
+<li><p>Extended <code>@examples</code> to demonstrate <code>tooltip_config$milestone</code> — showing how to add a custom column to <code>milestone_lines</code> and display it in hover tooltips.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fix-0-2-6">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-6"></a></h3>
+<ul><li>
+<strong>Actual bar tooltip was missing</strong>: Hovering over the actual (lower) bar of a stacked planned/actual activity pair showed no tooltip. The actual bar trace had <code>hoverinfo = "skip"</code> — changed to show the same full tooltip (planned + actual dates) as the planned bar.</li>
+</ul><hr></div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.5" id="ganttify-025">ganttify 0.2.5<small>2026-03-03</small><a class="anchor" aria-label="anchor" href="#ganttify-025"></a></h2>
 <div class="section level3">
 <h3 id="new-feature-0-2-5">New Feature<a class="anchor" aria-label="anchor" href="#new-feature-0-2-5"></a></h3>
 <ul><li>
