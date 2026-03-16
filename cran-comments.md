@@ -13,11 +13,23 @@ There are currently no downstream dependencies for this package.
 
 ## Notes
 
-This is a patch update (v0.2.5) adding custom display labels for tooltip fields:
+This is a patch update (v0.2.6) with hover tooltip UX improvements:
 
-* **tooltip_config now accepts named character vectors** so users can control the label
-  shown for each custom field in hover tooltips. Use `c(column_name = "Display Label")`
-  syntax to display "Activity Details" instead of the raw column name "activity_details".
+* **Removed type labels**: "Type: WBS", "Type: Activity", and "Type: Milestone"
+  lines removed from all hover tooltips — the element type is visually clear from
+  chart appearance.
 
-* Fully backward-compatible — existing `tooltip_config` usage with plain character vectors
-  continues to work unchanged. Named elements can be mixed with unnamed elements.
+* **Bold field labels**: All tooltip labels (Start, End, Duration, Variance, Date,
+  and user-provided custom fields) are now rendered bold for improved readability.
+
+* **Variance separator**: A blank line is added after the Variance row in
+  activity tooltips that show both planned and actual dates.
+
+* **Documentation**: Updated `tooltip_config` parameter description and extended
+  `@examples` to include a milestone custom tooltip demonstration.
+
+* **Bug fix — actual bar hover**: Hovering the actual (lower) bar in stacked
+  planned/actual activity pairs now shows the tooltip. Previously suppressed by
+  `hoverinfo = "skip"`.
+
+All changes are fully backward-compatible — no API changes.

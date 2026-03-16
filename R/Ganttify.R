@@ -169,7 +169,7 @@ NULL
 #'     activity = c(activity_details = "Activity Details", "Status"),
 #'     milestone = c(Description = "Milestone Description")
 #'   )}
-#'   If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.
+#'   If NULL, only default fields (Start, End, Duration) are shown. Default NULL.
 #'
 #' @return A plotly object containing the interactive Gantt chart. Can be displayed directly
 #'   or saved using htmlwidgets::saveWidget().
@@ -270,7 +270,7 @@ NULL
 #' chart
 #'
 #' # Custom tooltip fields (add extra columns to show in hover popups)
-#' # First add custom columns to your data
+#' # Add custom columns to activities, WBS, and milestone data
 #' activities_extended <- test_project$activities
 #' activities_extended$Status <- sample(c("On Track", "Delayed", "Complete"),
 #'                                       nrow(activities_extended), replace = TRUE)
@@ -279,12 +279,22 @@ NULL
 #' wbs_extended <- test_project$wbs_structure
 #' wbs_extended$Owner <- "Project Manager"
 #'
+#' milestones <- data.frame(
+#'   label = c("Kickoff", "Deadline"),
+#'   color = c("green", "red"),
+#'   Description = c("Project start", "Final delivery"),
+#'   stringsAsFactors = FALSE
+#' )
+#' milestones$date <- list("01/15/2025", "12/31/2025")
+#'
 #' chart <- Ganttify(
 #'   wbs_structure = wbs_extended,
 #'   activities = activities_extended,
+#'   milestone_lines = milestones,
 #'   tooltip_config = list(
 #'     wbs = c("Owner"),
-#'     activity = c("Status", "Agency")
+#'     activity = c("Status", "Agency"),
+#'     milestone = c(Description = "Notes")
 #'   )
 #' )
 #' chart
@@ -921,7 +931,7 @@ Ganttify <- function(
       # Wrap text if needed
       wrapped_value <- wrap_text_for_hover(value, max_chars)
 
-      tooltip_parts <- c(tooltip_parts, paste0(display_label, ": ", wrapped_value))
+      tooltip_parts <- c(tooltip_parts, paste0("<b>", display_label, ":</b> ", wrapped_value))
     }
 
     if (length(tooltip_parts) == 0) return("")
@@ -1277,10 +1287,9 @@ Ganttify <- function(
 
         hover_content <- paste0(
           "<b>", wrap_text_for_hover(gsub("\u00A0", "", wbs_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
-          "Type: WBS<br>",
-          "Start: ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
-          "End: ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
-          "Duration: ", as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1, " days",
+          "<b>Start:</b> ", format(wbs_data$start[i], "%Y-%m-%d"), "<br>",
+          "<b>End:</b> ", format(wbs_data$end[i], "%Y-%m-%d"), "<br>",
+          "<b>Duration:</b> ", as.numeric(wbs_data$end[i] - wbs_data$start[i]) + 1, " days",
           custom_tooltip_wbs,
           "<extra></extra>"
         )
@@ -1387,16 +1396,15 @@ Ganttify <- function(
 
           hover_content_planned <- paste0(
             "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
-            "Type: Activity<br><br>",
             "<b>Planned:</b><br>",
-            "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
-            "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
-            "Duration: ", planned_duration, " days<br><br>",
+            "<b>Start:</b> ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
+            "<b>End:</b> ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
+            "<b>Duration:</b> ", planned_duration, " days<br><br>",
             "<b>Actual:</b><br>",
-            "Start: ", format(activity_data$start_actual[i], "%Y-%m-%d"), "<br>",
-            "End: ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
-            "Duration: ", actual_duration, " days<br>",
-            "Variance: ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days",
+            "<b>Start:</b> ", format(activity_data$start_actual[i], "%Y-%m-%d"), "<br>",
+            "<b>End:</b> ", format(activity_data$end_actual[i], "%Y-%m-%d"), "<br>",
+            "<b>Duration:</b> ", actual_duration, " days<br>",
+            "<b>Variance:</b> ", ifelse(variance_days > 0, paste0("+", variance_days), variance_days), " days<br>",
             custom_tooltip_activity,
             "<extra></extra>"
           )
@@ -1429,7 +1437,7 @@ Ganttify <- function(
             opacity = activity_opacity * 0.4,  # Lighter background
             name = "Actual",
             showlegend = FALSE,
-            hoverinfo = "skip",
+            hovertemplate = hover_content_planned,
             customdata = list(list(
               type = "activity_actual",
               original_start = as.character(activity_data$start_actual[i]),
@@ -1472,10 +1480,9 @@ Ganttify <- function(
 
           hover_content <- paste0(
             "<b>", wrap_text_for_hover(gsub("\u00A0", "", activity_data$y_label_full[i]), hover_popup_max_chars), "</b><br>",
-            "Type: Activity<br>",
-            "Start: ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
-            "End: ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
-            "Duration: ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days",
+            "<b>Start:</b> ", format(activity_data$start[i], "%Y-%m-%d"), "<br>",
+            "<b>End:</b> ", format(activity_data$end[i], "%Y-%m-%d"), "<br>",
+            "<b>Duration:</b> ", as.numeric(activity_data$end[i] - activity_data$start[i]) + 1, " days",
             custom_tooltip_activity,
             "<extra></extra>"
           )
@@ -1576,8 +1583,7 @@ Ganttify <- function(
             hoverinfo = "text",
             hovertext = paste0(
               "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
-              "Type: Milestone<br>",
-              "Date: ", format(milestone_date, "%Y-%m-%d"),
+              "<b>Date:</b> ", format(milestone_date, "%Y-%m-%d"),
               custom_tooltip_milestone
             )
           )
@@ -1680,10 +1686,9 @@ Ganttify <- function(
               hoverinfo = "text",
               hovertext = paste0(
                 "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
-                "Type: Milestone<br>",
-                "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
-                "End: ", format(end_date, "%Y-%m-%d"), "<br>",
-                "Duration: ", milestone_duration + 1, " days",
+                "<b>Start:</b> ", format(start_date, "%Y-%m-%d"), "<br>",
+                "<b>End:</b> ", format(end_date, "%Y-%m-%d"), "<br>",
+                "<b>Duration:</b> ", milestone_duration + 1, " days",
                 custom_tooltip_milestone
               )
             )
@@ -1786,10 +1791,9 @@ Ganttify <- function(
               hoverinfo = "text",
               hovertext = paste0(
                 "<b>", wrap_text_for_hover(milestone_data$label[i], hover_popup_max_chars), "</b><br>",
-                "Type: Milestone<br>",
-                "Start: ", format(start_date, "%Y-%m-%d"), "<br>",
-                "End: ", format(end_date, "%Y-%m-%d"), "<br>",
-                "Duration: ", as.numeric(end_date - start_date) + 1, " days",
+                "<b>Start:</b> ", format(start_date, "%Y-%m-%d"), "<br>",
+                "<b>End:</b> ", format(end_date, "%Y-%m-%d"), "<br>",
+                "<b>Duration:</b> ", as.numeric(end_date - start_date) + 1, " days",
                 custom_tooltip_milestone
               )
             )

@@ -1,3 +1,36 @@
+# ganttify 0.2.6
+
+## Improvements
+
+* **Cleaner hover tooltips**: Removed redundant "Type: WBS", "Type: Activity", and
+  "Type: Milestone" lines from all hover popups. The chart element type is already
+  visually apparent from bar shape and color.
+
+* **Bold tooltip labels**: All field labels in hover popups are now bold
+  for improved scanability — applies to both built-in fields (Start, End, Duration,
+  Variance, Date) and user-provided custom fields via `tooltip_config`.
+
+* **Variance spacing**: Added a blank separator line after the Variance row in
+  activity tooltips that show both planned and actual bars, visually separating the
+  core date fields from any custom tooltip fields that follow.
+
+## Documentation
+
+* Updated `tooltip_config` parameter description: removed stale mention of "Type"
+  from the list of default tooltip fields.
+
+* Extended `@examples` to demonstrate `tooltip_config$milestone` — showing how to
+  add a custom column to `milestone_lines` and display it in hover tooltips.
+
+## Bug Fix
+
+* **Actual bar tooltip was missing**: Hovering over the actual (lower) bar of a
+  stacked planned/actual activity pair showed no tooltip. The actual bar trace had
+  `hoverinfo = "skip"` — changed to show the same full tooltip (planned + actual
+  dates) as the planned bar.
+
+---
+
 # ganttify 0.2.5
 
 ## New Feature
