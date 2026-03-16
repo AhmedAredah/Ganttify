@@ -142,6 +142,10 @@ NULL
 #'     \item show_yaxis_labels: Logical, whether to show y-axis labels (default TRUE).
 #'       When FALSE, activity labels are hidden. If display_config$wbs$show_labels is TRUE,
 #'       WBS labels will still be shown; otherwise all y-axis labels are hidden.
+#'     \item xaxis_position: Character, position of the time (x) axis.
+#'       One of \code{"bottom"} (default), \code{"top"}, or \code{"both"}.
+#'       Use \code{"top"} to keep the axis visible when scrolling down a long chart.
+#'       Use \code{"both"} to show axis ticks and labels on both edges simultaneously.
 #'   }
 #'   Example: \preformatted{list(
 #'     buffer_days = 30,
@@ -151,7 +155,8 @@ NULL
 #'     yaxis_label_width = 300,
 #'     yaxis_label_max_chars = NULL,
 #'     hover_popup_max_chars = 50,
-#'     show_yaxis_labels = TRUE
+#'     show_yaxis_labels = TRUE,
+#'     xaxis_position = "bottom"
 #'   )}
 #'   If NULL, uses defaults shown above. Default NULL.
 #' @param tooltip_config List or NULL. Configuration for custom tooltip fields. Structure:
@@ -849,6 +854,7 @@ Ganttify <- function(
   yaxis_label_max_chars <- layout_config$yaxis_label_max_chars  # Can be NULL
   hover_popup_max_chars <- layout_config$hover_popup_max_chars %||% 50
   show_yaxis_labels <- layout_config$show_yaxis_labels %||% TRUE
+  xaxis_position <- layout_config$xaxis_position %||% "bottom"
 
   # ============================================
   # 1H. PARSE AND VALIDATE TOOLTIP CONFIG
@@ -1877,6 +1883,11 @@ Ganttify <- function(
     effective_label_width <- 50
   }
 
+  # Compute x-axis side and margin from xaxis_position
+  xaxis_side    <- if (!is.null(xaxis_position) && xaxis_position == "top") "top" else "bottom"
+  top_margin    <- if (!is.null(xaxis_position) && xaxis_position %in% c("top", "both")) 100 else 80
+  bottom_margin <- if (!is.null(xaxis_position) && xaxis_position == "top") 40 else 80
+
   fig <- fig %>% layout(
     title = list(
       text = paste0(chart_title),
@@ -1888,7 +1899,8 @@ Ganttify <- function(
       tickformat = "%Y-%m-%d",
       showgrid = FALSE,  # Disabled vertical grid
       range = c(plot_min_date, plot_max_date),
-      fixedrange = FALSE
+      fixedrange = FALSE,
+      side = xaxis_side
     ),
     yaxis = list(
       title = "",
@@ -1910,10 +1922,37 @@ Ganttify <- function(
     hoverdistance = 10,  # Reduce from default 20px to make milestone hover trigger only very close to the line
     plot_bgcolor = "white",  # Changed to white for better contrast with alternating backgrounds
     paper_bgcolor = "white",
-    margin = list(l = effective_label_width, r = 50, t = 80, b = 80),
+    margin = list(l = effective_label_width, r = 50, t = top_margin, b = bottom_margin),
     dragmode = "pan"
   )
-  
+
+  # Add a mirrored top axis when xaxis_position = "both"
+  if (!is.null(xaxis_position) && xaxis_position == "both") {
+    # Dummy invisible trace: forces xaxis2 to render even with no real data on it
+    fig <- fig %>% add_trace(
+      type        = "scatter",
+      mode        = "markers",
+      x           = c(plot_min_date),
+      y           = c(0),
+      xaxis       = "x2",
+      yaxis       = "y",
+      marker      = list(size = 0.001, opacity = 0, color = "transparent"),
+      showlegend  = FALSE,
+      hoverinfo   = "none",
+      name        = ""
+    ) %>% layout(
+      xaxis2 = list(
+        type        = "date",
+        tickformat  = "%Y-%m-%d",
+        showgrid    = FALSE,
+        overlaying  = "x",
+        side        = "top",
+        matches     = "x",
+        fixedrange  = FALSE
+      )
+    )
+  }
+
   # ============================================
   # 12. ADD LEFT-ALIGN CSS AND SCROLL SUPPORT
   # ============================================
@@ -2155,7 +2194,17 @@ Ganttify <- function(
           updateObj['xaxis.tickvals'] = tickVals;
           updateObj['xaxis.ticktext'] = tickText;
         }
-        
+
+        // Mirror tick format updates to top axis when xaxis_position = 'both'
+        if (el.layout.xaxis2) {
+          updateObj['xaxis2.tickformat'] = newFormat;
+          updateObj['xaxis2.tickmode'] = tickMode;
+          if (tickMode === 'array' && tickVals && tickVals.length > 0) {
+            updateObj['xaxis2.tickvals'] = tickVals;
+            updateObj['xaxis2.ticktext'] = tickText;
+          }
+        }
+
         // Only update if something changed
         var needsUpdate = el.layout.xaxis.tickformat !== newFormat ||
                          el.layout.xaxis.tickmode !== tickMode;

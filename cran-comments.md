@@ -32,4 +32,7 @@ This is a patch update (v0.2.6) with hover tooltip UX improvements:
   planned/actual activity pairs now shows the tooltip. Previously suppressed by
   `hoverinfo = "skip"`.
 
+* **X-axis position**: New `layout_config$xaxis_position` option (`"bottom"`,
+  `"top"`, `"both"`) controls where the time axis appears.
+
 All changes are fully backward-compatible — no API changes.

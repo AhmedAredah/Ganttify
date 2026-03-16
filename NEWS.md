@@ -14,6 +14,11 @@
   activity tooltips that show both planned and actual bars, visually separating the
   core date fields from any custom tooltip fields that follow.
 
+* **X-axis position control**: New `xaxis_position` key in `layout_config` lets
+  users place the time axis at `"bottom"` (default), `"top"`, or `"both"`. Use
+  `"top"` to keep the date axis visible when scrolling through long charts, or
+  `"both"` to show tick labels on both edges simultaneously.
+
 ## Documentation
 
 * Updated `tooltip_config` parameter description: removed stale mention of "Type"
