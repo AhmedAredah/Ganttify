@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.6</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.7</span>
       </span>
     </div>
 
@@ -47,6 +47,14 @@
       <small>Source: <a href="https://github.com/AhmedAredah/Ganttify/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.7" id="ganttify-027">ganttify 0.2.7<a class="anchor" aria-label="anchor" href="#ganttify-027"></a></h2>
+<div class="section level3">
+<h3 id="improvements-0-2-7">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-7"></a></h3>
+<ul><li>
+<strong>Activity-bar click identification</strong>: Each activity bar’s plotly <code>customdata</code> now carries an additional <code>activity_id</code> field (the value of the <code>Activity_ID</code> column for that bar), alongside the existing <code>type</code>, <code>original_start</code>, and <code>original_end</code> keys. This lets consuming apps resolve a clicked bar back to its source record via <code>event_data("plotly_click")$customdata</code>. The change is purely additive — existing <code>customdata</code> keys are unchanged, so the bar-width JavaScript (which reads <code>type</code>/<code>original_start</code>/<code>original_end</code> by name) is unaffected. Applies to all three activity-bar traces: planned, actual, and single bars.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.2.6" id="ganttify-026">ganttify 0.2.6<a class="anchor" aria-label="anchor" href="#ganttify-026"></a></h2>
 <div class="section level3">
