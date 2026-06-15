@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.7</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.8</span>
       </span>
     </div>
 
@@ -48,7 +48,15 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.2.7" id="ganttify-027">ganttify 0.2.7<a class="anchor" aria-label="anchor" href="#ganttify-027"></a></h2>
+<h2 class="page-header" data-toc-text="0.2.8" id="ganttify-028">ganttify 0.2.8<a class="anchor" aria-label="anchor" href="#ganttify-028"></a></h2>
+<div class="section level3">
+<h3 id="bug-fix-0-2-8">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-8"></a></h3>
+<ul><li>
+<strong>Y-axis labels no longer overlap the bars</strong>: When <code>show_yaxis_labels = TRUE</code>, the activity tick labels were rendering inside the plot area, to the right of the y-axis line, overlapping the activity bars. The <code>onRender</code> alignment handler was forcing SVG <code>text-anchor='start'</code> on each left-axis label without shifting its <code>x</code> coordinate, so the text grew rightward from the axis into the bars. The handler is now a no-op: plotly’s native <code>text-anchor='end'</code> keeps left-axis labels flush against the axis and fully within the reserved left gutter, both on initial render and after every pan/zoom. No overlap, no clipping.</li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.7" id="ganttify-027">ganttify 0.2.7<small>2026-06-15</small><a class="anchor" aria-label="anchor" href="#ganttify-027"></a></h2>
 <div class="section level3">
 <h3 id="improvements-0-2-7">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-7"></a></h3>
 <ul><li>
