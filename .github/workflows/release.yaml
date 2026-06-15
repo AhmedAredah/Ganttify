@@ -28,18 +28,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Need previous commit to compare
+          fetch-depth: 0  # Fetch full history and all tags
 
       - name: Check if version changed
         id: check
         run: |
           # Get current version from DESCRIPTION
           NEW_VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: //')
-      
-          # Get previous version from last commit
-          git checkout HEAD~1 -- DESCRIPTION 2>/dev/null || true
-          OLD_VERSION=$(grep "^Version:" DESCRIPTION | sed 's/Version: //' || echo "0.0.0")
-          git checkout HEAD -- DESCRIPTION
+
+          # Get the version from the last published git tag (not HEAD~1)
+          # This avoids the issue where a version bump commit has subsequent commits stacked on top
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          OLD_VERSION=$(echo "$LAST_TAG" | sed 's/^v//')
       
           echo "Old version: $OLD_VERSION"
           echo "New version: $NEW_VERSION"

@@ -153,6 +153,10 @@ If NULL, uses defaults shown above. Default NULL.}
   \item show_yaxis_labels: Logical, whether to show y-axis labels (default TRUE).
     When FALSE, activity labels are hidden. If display_config$wbs$show_labels is TRUE,
     WBS labels will still be shown; otherwise all y-axis labels are hidden.
+  \item xaxis_position: Character, position of the time (x) axis.
+    One of \code{"bottom"} (default), \code{"top"}, or \code{"both"}.
+    Use \code{"top"} to keep the axis visible when scrolling down a long chart.
+    Use \code{"both"} to show axis ticks and labels on both edges simultaneously.
 }
 Example: \preformatted{list(
   buffer_days = 30,
@@ -162,7 +166,8 @@ Example: \preformatted{list(
   yaxis_label_width = 300,
   yaxis_label_max_chars = NULL,
   hover_popup_max_chars = 50,
-  show_yaxis_labels = TRUE
+  show_yaxis_labels = TRUE,
+  xaxis_position = "bottom"
 )}
 If NULL, uses defaults shown above. Default NULL.}
 
@@ -181,7 +186,7 @@ Named and unnamed elements can be mixed freely. Example: \preformatted{list(
   activity = c(activity_details = "Activity Details", "Status"),
   milestone = c(Description = "Milestone Description")
 )}
-If NULL, only default fields (Type, Start, End, Duration) are shown. Default NULL.}
+If NULL, only default fields (Start, End, Duration) are shown. Default NULL.}
 }
 \value{
 A plotly object containing the interactive Gantt chart. Can be displayed directly
@@ -288,7 +293,7 @@ chart <- Ganttify(
 chart
 
 # Custom tooltip fields (add extra columns to show in hover popups)
-# First add custom columns to your data
+# Add custom columns to activities, WBS, and milestone data
 activities_extended <- test_project$activities
 activities_extended$Status <- sample(c("On Track", "Delayed", "Complete"),
                                       nrow(activities_extended), replace = TRUE)
@@ -297,12 +302,22 @@ activities_extended$Agency <- "TTI"
 wbs_extended <- test_project$wbs_structure
 wbs_extended$Owner <- "Project Manager"
 
+milestones <- data.frame(
+  label = c("Kickoff", "Deadline"),
+  color = c("green", "red"),
+  Description = c("Project start", "Final delivery"),
+  stringsAsFactors = FALSE
+)
+milestones$date <- list("01/15/2025", "12/31/2025")
+
 chart <- Ganttify(
   wbs_structure = wbs_extended,
   activities = activities_extended,
+  milestone_lines = milestones,
   tooltip_config = list(
     wbs = c("Owner"),
-    activity = c("Status", "Agency")
+    activity = c("Status", "Agency"),
+    milestone = c(Description = "Notes")
   )
 )
 chart

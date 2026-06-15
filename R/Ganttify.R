@@ -1429,7 +1429,8 @@ Ganttify <- function(
             customdata = list(list(
               type = "activity_planned",
               original_start = as.character(activity_data$start[i]),
-              original_end = as.character(activity_data$end[i])
+              original_end = as.character(activity_data$end[i]),
+              activity_id = activity_data$id[i]
             ))
           )
 
@@ -1447,7 +1448,8 @@ Ganttify <- function(
             customdata = list(list(
               type = "activity_actual",
               original_start = as.character(activity_data$start_actual[i]),
-              original_end = as.character(activity_data$end_actual[i])
+              original_end = as.character(activity_data$end_actual[i]),
+              activity_id = activity_data$id[i]
             ))
           )
 
@@ -1507,7 +1509,8 @@ Ganttify <- function(
             customdata = list(list(
               type = "activity",
               original_start = as.character(activity_data$start[i]),
-              original_end = as.character(activity_data$end[i])
+              original_end = as.character(activity_data$end[i]),
+              activity_id = activity_data$id[i]
             ))
           )
         }

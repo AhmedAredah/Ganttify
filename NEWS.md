@@ -1,3 +1,16 @@
+# ganttify 0.2.7
+
+## Improvements
+
+* **Activity-bar click identification**: Each activity bar's plotly `customdata`
+  now carries an additional `activity_id` field (the value of the `Activity_ID`
+  column for that bar), alongside the existing `type`, `original_start`, and
+  `original_end` keys. This lets consuming apps resolve a clicked bar back to its
+  source record via `event_data("plotly_click")$customdata`. The change is purely
+  additive — existing `customdata` keys are unchanged, so the bar-width JavaScript
+  (which reads `type`/`original_start`/`original_end` by name) is unaffected.
+  Applies to all three activity-bar traces: planned, actual, and single bars.
+
 # ganttify 0.2.6
 
 ## Improvements
