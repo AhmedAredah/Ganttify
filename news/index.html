@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.8</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.9</span>
       </span>
     </div>
 
@@ -48,11 +48,14 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="0.2.8" id="ganttify-028">ganttify 0.2.8<a class="anchor" aria-label="anchor" href="#ganttify-028"></a></h2>
+<h2 class="page-header" data-toc-text="0.2.9" id="ganttify-029">ganttify 0.2.9<a class="anchor" aria-label="anchor" href="#ganttify-029"></a></h2>
 <div class="section level3">
-<h3 id="bug-fix-0-2-8">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-8"></a></h3>
+<h3 id="bug-fix-0-2-9">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-9"></a></h3>
 <ul><li>
-<strong>Y-axis labels no longer overlap the bars</strong>: When <code>show_yaxis_labels = TRUE</code>, the activity tick labels were rendering inside the plot area, to the right of the y-axis line, overlapping the activity bars. The <code>onRender</code> alignment handler was forcing SVG <code>text-anchor='start'</code> on each left-axis label without shifting its <code>x</code> coordinate, so the text grew rightward from the axis into the bars. The handler is now a no-op: plotly’s native <code>text-anchor='end'</code> keeps left-axis labels flush against the axis and fully within the reserved left gutter, both on initial render and after every pan/zoom. No overlap, no clipping.</li>
+<p><strong>Y-axis labels are now left-aligned to preserve the WBS hierarchy, without overlapping the bars</strong>: When <code>show_yaxis_labels = TRUE</code>, the activity tick labels were rendering inside the plot area, to the right of the y-axis line, overlapping the activity bars. The <code>onRender</code> alignment handler was forcing SVG <code>text-anchor='start'</code> on each left-axis label without shifting its <code>x</code> coordinate, so the text grew rightward from the axis into the bars.</p>
+<p>The handler now LEFT-ALIGNS each label flush to the left edge of the reserved gutter (<code>text-anchor='start'</code> with a small constant left pad). Because the WBS hierarchy is encoded as leading indentation/whitespace in each label, starting every label at the same left edge makes that indentation — and therefore the parent/child hierarchy — visible again. (Right-aligning the labels flush to the axis, as a previous interim fix did, removed the overlap but collapsed the indentation and hid the hierarchy.)</p>
+<p>A per-label collision guard measures each rendered label with <code>getComputedTextLength()</code>. Any label that would cross the axis line (<code>x = effective_label_width</code>) into the plot area is degraded gracefully by falling back to plotly’s native right-alignment (<code>text-anchor='end'</code>, anchored at the axis), so it stays flush to the axis and never overlaps the bars. Since the gutter is sized to fit the longest label, virtually all labels fit left-aligned; the fallback is a safety net for pathological edge cases. Alignment is applied on initial render and re-applied after every pan/zoom relayout; if text is not yet laid out (measurement returns 0) it is retried on the next animation frame.</p>
+</li>
 </ul></div>
 </div>
     <div class="section level2">
