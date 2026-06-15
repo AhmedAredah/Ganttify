@@ -1,3 +1,35 @@
+# ganttify 0.2.10
+
+## Improvements
+
+* **Long y-axis labels are now truncated with an ellipsis (instead of
+  right-aligned) and reveal their full text on hover**: When
+  `show_yaxis_labels = TRUE`, any tick label too long to fit the reserved left
+  gutter previously fell back to plotly's native right-alignment, which kept the
+  label inside the gutter but collapsed its leading indentation and hid the WBS
+  hierarchy for that row.
+
+  The `onRender` alignment handler now **left-aligns every label** and, for
+  labels that do not fit, **truncates the trailing content and appends an
+  ellipsis (`…`)** while preserving the leading whitespace that encodes the WBS
+  depth. As a result the parent/child hierarchy stays visible for *all* rows,
+  not just the ones short enough to fit — truncation is a strictly better
+  fallback than right-alignment. The fit is computed with a bounded binary
+  search over the rendered text width (`getComputedTextLength()`), guarded
+  against the degenerate case where even `indent + …` overflows.
+
+  The original, untruncated label text is cached in a `data-full-label`
+  attribute before any mutation, so re-runs on pan/zoom relayout always truncate
+  from the original rather than from already-truncated text.
+
+  **Hover popup + accessibility**: hovering a truncated label shows a small,
+  self-contained popup (a custom absolutely-positioned div appended to the
+  widget) with the full untruncated text, and each truncated label also carries
+  an `aria-label` with the full text for screen readers. The popup is wired
+  through a single set of delegated listeners bound once on the widget container
+  (guarded so the per-relayout re-run never stacks duplicate listeners), and is
+  hidden cleanly when the pointer leaves a label.
+
 # ganttify 0.2.9
 
 ## Bug Fix

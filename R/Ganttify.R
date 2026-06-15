@@ -1997,19 +1997,23 @@ Ganttify <- function(
       //   all labels at the same x makes that indentation visible again and the
       //   parent/child hierarchy reads correctly.
       //
-      //   COLLISION GUARD: the y-axis line sits at x = gutterWidth (the reserved
-      //   left margin). We measure each rendered label width with
-      //   getComputedTextLength(). If LEFT_PAD + width would cross the axis
-      //   (i.e. extend past gutterWidth - SAFETY_GAP into the plot/bars), that
-      //   SINGLE label is degraded gracefully: it falls back to plotly's native
-      //   right-alignment (text-anchor='end' anchored AT the axis line), which
-      //   keeps even an over-long label fully inside the gutter and flush to the
-      //   axis -- never over the bars. The gutter was sized to fit the longest
-      //   label right-aligned, so in practice almost every label fits left-
-      //   aligned; the fallback is a safety net for pathological edge cases.
-      //   Labels that fit are left-aligned (hierarchy visible); labels that do
-      //   not are right-aligned (hierarchy hidden for that one row, but no
-      //   overlap) -- the trade-off is documented in NEWS.
+      //   COLLISION GUARD + TRUNCATION (0.2.10): the y-axis line sits at
+      //   x = gutterWidth (the reserved left margin). We measure each rendered
+      //   label width with getComputedTextLength(). If LEFT_PAD + width fits
+      //   within gutterWidth - SAFETY_GAP, the label is left-aligned untouched
+      //   (full text, hierarchy visible). If it does NOT fit, the label is
+      //   TRUNCATED -- left-aligned with a trailing ellipsis -- instead of the
+      //   old right-alignment fallback. Truncation keeps the leading
+      //   indentation (hierarchy) visible for EVERY row, which right-alignment
+      //   could not. The full untruncated text is preserved (a) in
+      //   data-full-label so re-runs always truncate from the original, and
+      //   (b) surfaced to the user via a hover popup + aria-label (see
+      //   bindLabelTooltip / the tooltip div), so no information is lost.
+      //
+      //   Truncation preserves LEADING whitespace (it encodes the WBS depth) and
+      //   shortens only the trailing visible content, appending an ellipsis. It
+      //   guards against infinite loops and the degenerate case where even
+      //   'indent + ellipsis' overflows (then it shows just that).
       //
       // TIMING: getComputedTextLength() only returns a real value once the text
       // node is laid out. This runs in onRender and on plotly_afterplot. If the
@@ -2017,10 +2021,141 @@ Ganttify <- function(
       // requestAnimationFrame and re-run, retrying a bounded number of times.
       var LEFT_PAD = 4;       // px from the SVG/plot left edge for left-aligned labels
       var SAFETY_GAP = 6;     // px clearance kept between label end and the axis line
+      var ELLIPSIS = '…';
+
+      // ---- Hover tooltip (approach (a): custom positioned div) ----------------
+      // A single reusable div appended to the widget container shows the FULL
+      // (untruncated) label text on hover. We use a custom div (not a native
+      // <title>) for instant appearance and full styling control on the white
+      // plot background. Only truncated labels get the popup (a non-truncated
+      // label already shows its full text, so a popup would be redundant); every
+      // truncated label also gets an aria-label for screen-reader access.
+      //
+      // LEAK PREVENTION: listeners are attached via ONE delegated set of
+      // handlers on el (bound exactly once, guarded by elTooltipBound). Because
+      // the handler re-runs on every relayout we never add per-node listeners,
+      // so relayout can never stack duplicates. Per-node state lives only in
+      // data-* attributes, which plotly's own node recycling discards.
+      var tooltipEl = null;
+      var elTooltipBound = false;
+
+      function ensureTooltipEl() {
+        if (tooltipEl && tooltipEl.parentNode) return tooltipEl;
+        tooltipEl = document.createElement('div');
+        tooltipEl.className = 'ganttify-yaxis-tooltip';
+        tooltipEl.setAttribute('role', 'tooltip');
+        tooltipEl.style.position = 'absolute';
+        tooltipEl.style.zIndex = '10000';
+        tooltipEl.style.pointerEvents = 'none';
+        tooltipEl.style.display = 'none';
+        tooltipEl.style.maxWidth = '420px';
+        tooltipEl.style.padding = '5px 9px';
+        tooltipEl.style.background = '#ffffff';
+        tooltipEl.style.color = '#222222';
+        tooltipEl.style.border = '1px solid #b0b0b0';
+        tooltipEl.style.borderRadius = '4px';
+        tooltipEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.18)';
+        tooltipEl.style.font = '12px/1.4 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';
+        tooltipEl.style.whiteSpace = 'pre';
+        tooltipEl.style.left = '0px';
+        tooltipEl.style.top = '0px';
+        if (getComputedStyle(el).position === 'static') { el.style.position = 'relative'; }
+        el.appendChild(tooltipEl);
+        return tooltipEl;
+      }
+
+      function positionTooltip(clientX, clientY) {
+        if (!tooltipEl) return;
+        var rect = el.getBoundingClientRect();
+        var x = clientX - rect.left + 14;
+        var y = clientY - rect.top + 14;
+        // Keep the popup inside the widget horizontally.
+        var maxX = el.clientWidth - tooltipEl.offsetWidth - 4;
+        if (x > maxX) { x = Math.max(4, maxX); }
+        if (y < 0) { y = 0; }
+        tooltipEl.style.left = x + 'px';
+        tooltipEl.style.top = y + 'px';
+      }
+
+      function isYAxisLabel(node) {
+        // Climb from the event target to a y-axis tick text node, if any.
+        for (var n = node; n && n !== el; n = n.parentNode) {
+          if (n.tagName && n.tagName.toLowerCase() === 'text' &&
+              n.getAttribute('data-truncated') === '1') {
+            return n;
+          }
+        }
+        return null;
+      }
+
+      function bindTooltipDelegation() {
+        if (elTooltipBound) return;       // bind exactly once -> no leaks on relayout
+        elTooltipBound = true;
+        el.addEventListener('mouseover', function(ev) {
+          var label = isYAxisLabel(ev.target);
+          if (!label) return;
+          var full = label.getAttribute('data-full-label');
+          if (full === null) return;
+          ensureTooltipEl();
+          tooltipEl.textContent = full;
+          tooltipEl.style.display = 'block';
+          positionTooltip(ev.clientX, ev.clientY);
+        });
+        el.addEventListener('mousemove', function(ev) {
+          if (!tooltipEl || tooltipEl.style.display === 'none') return;
+          if (!isYAxisLabel(ev.target)) { tooltipEl.style.display = 'none'; return; }
+          positionTooltip(ev.clientX, ev.clientY);
+        });
+        el.addEventListener('mouseout', function(ev) {
+          if (!tooltipEl) return;
+          if (isYAxisLabel(ev.target)) { tooltipEl.style.display = 'none'; }
+        });
+      }
+
+      // Truncate a single text node so it fits, preserving leading indent.
+      // Returns true if the label was truncated, false if it fit untouched.
+      function fitLabel(node, full, maxWidth) {
+        // Split off the leading whitespace (hierarchy indent) we must keep.
+        var indentLen = 0;
+        while (indentLen < full.length && (full.charAt(indentLen) === ' ' || full.charAt(indentLen) === '\t')) {
+          indentLen++;
+        }
+        var indent = full.substring(0, indentLen);
+        var body = full.substring(indentLen);
+
+        // First try the full text.
+        node.textContent = full;
+        var width = 0;
+        try { width = node.getComputedTextLength(); } catch (e) { width = 0; }
+        if (LEFT_PAD + width <= maxWidth) {
+          node.removeAttribute('data-truncated');
+          node.removeAttribute('aria-label');
+          return false;
+        }
+
+        // Binary search the longest body prefix that fits with an ellipsis.
+        var lo = 0, hi = body.length, best = 0, guard = 0;
+        while (lo <= hi && guard < 64) {
+          guard++;
+          var mid = (lo + hi) >> 1;
+          node.textContent = indent + body.substring(0, mid) + ELLIPSIS;
+          var w = 0;
+          try { w = node.getComputedTextLength(); } catch (e2) { w = 0; }
+          if (LEFT_PAD + w <= maxWidth) { best = mid; lo = mid + 1; }
+          else { hi = mid - 1; }
+        }
+        // Degenerate: even 'indent + ellipsis' overflows -> show just that.
+        node.textContent = indent + body.substring(0, best) + ELLIPSIS;
+        node.setAttribute('data-truncated', '1');
+        node.setAttribute('aria-label', full.replace(/^[\s]+/, ''));
+        return true;
+      }
 
       function alignYAxisLabels(retriesLeft) {
         if (!shouldAlignLabels) return;  // Skip when labels are hidden/partial
         if (typeof retriesLeft === 'undefined') retriesLeft = 5;
+
+        bindTooltipDelegation();  // idempotent; binds once
 
         // plotly renders left/below y-axis tick labels in g.yaxislayer-above;
         // fall back to the generic .ytick text selector if the layer is absent.
@@ -2037,39 +2172,33 @@ Ganttify <- function(
         }
 
         // The axis line sits at x = gutterWidth; never let a label cross it.
-        var axisX = gutterWidth;
+        var maxWidth = gutterWidth - SAFETY_GAP;
         var measuredAll = true;
 
         for (var i = 0; i < nodes.length; i++) {
           var node = nodes[i];
-          // Remember the native (plotly-assigned) x so we can restore it when a
-          // label must fall back to right-alignment.
-          if (node.getAttribute('data-native-x') === null) {
-            node.setAttribute('data-native-x', node.getAttribute('x'));
+          // Cache the ORIGINAL full text before any mutation, so every re-run
+          // truncates from the original rather than from already-truncated text.
+          if (node.getAttribute('data-full-label') === null) {
+            node.setAttribute('data-full-label', node.textContent);
           }
-          var nativeX = node.getAttribute('data-native-x');
+          var full = node.getAttribute('data-full-label');
 
-          var width = 0;
-          try { width = node.getComputedTextLength(); } catch (e) { width = 0; }
-          if (width === 0 && node.textContent && node.textContent.trim().length > 0) {
-            // Non-empty label measured as 0 -> not laid out yet; defer.
+          // Detect 'not laid out yet' using the full text width.
+          node.textContent = full;
+          var probe = 0;
+          try { probe = node.getComputedTextLength(); } catch (e) { probe = 0; }
+          if (probe === 0 && full && full.trim().length > 0) {
             measuredAll = false;
             continue;
           }
 
-          if (LEFT_PAD + width <= axisX - SAFETY_GAP) {
-            // Fits: left-align so leading indentation (hierarchy) is visible.
-            node.setAttribute('text-anchor', 'start');
-            node.setAttribute('x', LEFT_PAD);
-          } else {
-            // Too wide for the gutter when left-aligned: fall back to plotly's
-            // native right-alignment so it stays flush to the axis, never over
-            // the bars.
-            node.setAttribute('text-anchor', 'end');
-            if (nativeX !== null) {
-              node.setAttribute('x', nativeX);
-            }
-          }
+          // Always left-align so leading indentation (hierarchy) is visible.
+          node.setAttribute('text-anchor', 'start');
+          node.setAttribute('x', LEFT_PAD);
+
+          // Fit the text: untouched if it fits, otherwise truncate + ellipsis.
+          fitLabel(node, full, maxWidth);
         }
 
         if (!measuredAll && retriesLeft > 0 && typeof requestAnimationFrame === 'function') {
