@@ -1,16 +1,32 @@
-# ganttify 0.2.8
+# ganttify 0.2.9
 
 ## Bug Fix
 
-* **Y-axis labels no longer overlap the bars**: When `show_yaxis_labels = TRUE`,
-  the activity tick labels were rendering inside the plot area, to the right of
-  the y-axis line, overlapping the activity bars. The `onRender` alignment
-  handler was forcing SVG `text-anchor='start'` on each left-axis label without
-  shifting its `x` coordinate, so the text grew rightward from the axis into the
-  bars. The handler is now a no-op: plotly's native `text-anchor='end'` keeps
-  left-axis labels flush against the axis and fully within the reserved left
-  gutter, both on initial render and after every pan/zoom. No overlap, no
-  clipping.
+* **Y-axis labels are now left-aligned to preserve the WBS hierarchy, without
+  overlapping the bars**: When `show_yaxis_labels = TRUE`, the activity tick
+  labels were rendering inside the plot area, to the right of the y-axis line,
+  overlapping the activity bars. The `onRender` alignment handler was forcing
+  SVG `text-anchor='start'` on each left-axis label without shifting its `x`
+  coordinate, so the text grew rightward from the axis into the bars.
+
+  The handler now LEFT-ALIGNS each label flush to the left edge of the reserved
+  gutter (`text-anchor='start'` with a small constant left pad). Because the WBS
+  hierarchy is encoded as leading indentation/whitespace in each label, starting
+  every label at the same left edge makes that indentation — and therefore the
+  parent/child hierarchy — visible again. (Right-aligning the labels flush to the
+  axis, as a previous interim fix did, removed the overlap but collapsed the
+  indentation and hid the hierarchy.)
+
+  A per-label collision guard measures each rendered label with
+  `getComputedTextLength()`. Any label that would cross the axis line
+  (`x = effective_label_width`) into the plot area is degraded gracefully by
+  falling back to plotly's native right-alignment (`text-anchor='end'`, anchored
+  at the axis), so it stays flush to the axis and never overlaps the bars. Since
+  the gutter is sized to fit the longest label, virtually all labels fit
+  left-aligned; the fallback is a safety net for pathological edge cases.
+  Alignment is applied on initial render and re-applied after every pan/zoom
+  relayout; if text is not yet laid out (measurement returns 0) it is retried on
+  the next animation frame.
 
 # ganttify 0.2.7
 

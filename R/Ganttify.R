@@ -1962,36 +1962,119 @@ Ganttify <- function(
 
   # Pass show_yaxis_labels to JavaScript to conditionally apply alignment
   js_show_yaxis_labels <- tolower(as.character(show_yaxis_labels))
+  # Pass the reserved left-gutter width (in px) so JS knows where the y-axis
+  # line sits and can guard against labels crossing it into the plot area.
+  js_gutter_width <- as.character(effective_label_width)
 
   fig <- fig %>% onRender(paste0("
     function(el) {
       // Flag to control whether to apply y-axis label alignment
       var shouldAlignLabels = ", js_show_yaxis_labels, ";
+      // Width (px) of the reserved left gutter; the y-axis line sits at this x.
+      var gutterWidth = ", js_gutter_width, ";
 
-      // Function to align y-axis tick labels within the left gutter.
+      // Function to LEFT-ALIGN y-axis tick labels within the left gutter so the
+      // WBS hierarchy (encoded as leading indentation/whitespace in each label)
+      // stays visible, while GUARANTEEING no label ever crosses the axis into
+      // the activity bars.
       //
-      // PREVIOUS BUG: this used to force text-anchor='start' on every label
-      // WITHOUT moving the label's x coordinate. For a left-side y-axis, plotly
-      // places each tick label's x just left of the axis line (x is in plot
-      // pixel coords; the axis sits at x = left margin = effective_label_width)
-      // and renders with the native text-anchor='end', so the label's RIGHT
-      // edge butts against the axis and the text grows LEFTWARD into the
-      // reserved gutter -- no overlap with the bars. Flipping the anchor to
-      // 'start' at that same x made the text grow RIGHTWARD from the axis,
-      // crossing into the plot area and overlapping the activity bars (only
-      // when show_yaxis_labels is ON, i.e. shouldAlignLabels === true).
+      // HISTORY:
+      //   - Originally this forced text-anchor='start' on every label WITHOUT
+      //     moving the label's x. plotly places each left-axis tick label's x
+      //     just left of the axis line and renders with text-anchor='end', so
+      //     the RIGHT edge butts against the axis and the text grows LEFTWARD
+      //     into the gutter. Flipping to 'start' at that SAME x made the text
+      //     grow RIGHTWARD from the axis, overlapping the bars.
+      //   - It was then made a no-op (keep native end-anchor). That fixed the
+      //     overlap but right-aligned every label flush to the axis, which
+      //     collapses the leading indentation and hides the WBS hierarchy.
       //
-      // FIX: leave plotly's native text-anchor='end' in place. The left margin
-      // (effective_label_width) is sized to the label width, so right-aligned
-      // labels sit flush against the axis, fully inside the gutter, and never
-      // overlap the bars -- on initial render and after every pan/zoom relayout.
-      // This intentionally preserves plotly's default anchoring rather than
-      // re-anchoring, which would risk long labels clipping or colliding with
-      // the axis.
-      function alignYAxisLabels() {
+      // CURRENT BEHAVIOR (left-align + collision guard):
+      //   For each tick label we set text-anchor='start' AND set x to a small
+      //   constant left pad (LEFT_PAD) measured from the SVG/plot left edge, so
+      //   every label begins at the same left edge of the gutter. Because the
+      //   indentation is LEADING whitespace baked into the label text, starting
+      //   all labels at the same x makes that indentation visible again and the
+      //   parent/child hierarchy reads correctly.
+      //
+      //   COLLISION GUARD: the y-axis line sits at x = gutterWidth (the reserved
+      //   left margin). We measure each rendered label width with
+      //   getComputedTextLength(). If LEFT_PAD + width would cross the axis
+      //   (i.e. extend past gutterWidth - SAFETY_GAP into the plot/bars), that
+      //   SINGLE label is degraded gracefully: it falls back to plotly's native
+      //   right-alignment (text-anchor='end' anchored AT the axis line), which
+      //   keeps even an over-long label fully inside the gutter and flush to the
+      //   axis -- never over the bars. The gutter was sized to fit the longest
+      //   label right-aligned, so in practice almost every label fits left-
+      //   aligned; the fallback is a safety net for pathological edge cases.
+      //   Labels that fit are left-aligned (hierarchy visible); labels that do
+      //   not are right-aligned (hierarchy hidden for that one row, but no
+      //   overlap) -- the trade-off is documented in NEWS.
+      //
+      // TIMING: getComputedTextLength() only returns a real value once the text
+      // node is laid out. This runs in onRender and on plotly_afterplot. If the
+      // measurement comes back 0 (not yet laid out), we defer one frame via
+      // requestAnimationFrame and re-run, retrying a bounded number of times.
+      var LEFT_PAD = 4;       // px from the SVG/plot left edge for left-aligned labels
+      var SAFETY_GAP = 6;     // px clearance kept between label end and the axis line
+
+      function alignYAxisLabels(retriesLeft) {
         if (!shouldAlignLabels) return;  // Skip when labels are hidden/partial
-        // No-op: plotly's native text-anchor='end' already keeps left-axis
-        // labels within the reserved left gutter. Do NOT override the anchor.
+        if (typeof retriesLeft === 'undefined') retriesLeft = 5;
+
+        // plotly renders left/below y-axis tick labels in g.yaxislayer-above;
+        // fall back to the generic .ytick text selector if the layer is absent.
+        var nodes = el.querySelectorAll('g.yaxislayer-above text');
+        if (!nodes || nodes.length === 0) {
+          nodes = el.querySelectorAll('.ytick text');
+        }
+        if (!nodes || nodes.length === 0) {
+          // Text not in the DOM yet -- try again next frame.
+          if (retriesLeft > 0 && typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(function() { alignYAxisLabels(retriesLeft - 1); });
+          }
+          return;
+        }
+
+        // The axis line sits at x = gutterWidth; never let a label cross it.
+        var axisX = gutterWidth;
+        var measuredAll = true;
+
+        for (var i = 0; i < nodes.length; i++) {
+          var node = nodes[i];
+          // Remember the native (plotly-assigned) x so we can restore it when a
+          // label must fall back to right-alignment.
+          if (node.getAttribute('data-native-x') === null) {
+            node.setAttribute('data-native-x', node.getAttribute('x'));
+          }
+          var nativeX = node.getAttribute('data-native-x');
+
+          var width = 0;
+          try { width = node.getComputedTextLength(); } catch (e) { width = 0; }
+          if (width === 0 && node.textContent && node.textContent.trim().length > 0) {
+            // Non-empty label measured as 0 -> not laid out yet; defer.
+            measuredAll = false;
+            continue;
+          }
+
+          if (LEFT_PAD + width <= axisX - SAFETY_GAP) {
+            // Fits: left-align so leading indentation (hierarchy) is visible.
+            node.setAttribute('text-anchor', 'start');
+            node.setAttribute('x', LEFT_PAD);
+          } else {
+            // Too wide for the gutter when left-aligned: fall back to plotly's
+            // native right-alignment so it stays flush to the axis, never over
+            // the bars.
+            node.setAttribute('text-anchor', 'end');
+            if (nativeX !== null) {
+              node.setAttribute('x', nativeX);
+            }
+          }
+        }
+
+        if (!measuredAll && retriesLeft > 0 && typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(function() { alignYAxisLabels(retriesLeft - 1); });
+        }
       }
 
       // Function to update x-axis date format based on visible range
@@ -2337,8 +2420,9 @@ Ganttify <- function(
         };
       })();
 
-      // Apply alignment on initial render
-      setTimeout(alignYAxisLabels, 100);
+      // Apply alignment on initial render. Wrap so alignYAxisLabels() is called
+      // with no args (retriesLeft defaults to its built-in retry budget).
+      setTimeout(function() { alignYAxisLabels(); }, 100);
 
       // Apply initial date format
       setTimeout(updateDateFormat, 150);
@@ -2346,8 +2430,10 @@ Ganttify <- function(
       // Apply initial bar width adjustment (after date format is applied and relayout completes)
       setTimeout(function() { updateBarWidths(el); }, 500);
       
-      // Re-apply alignment after every plot update (pan, zoom, etc.)
-      el.on('plotly_afterplot', alignYAxisLabels);
+      // Re-apply alignment after every plot update (pan, zoom, etc.). Wrap so
+      // plotly's event payload is NOT passed as retriesLeft -- the alignment
+      // must re-run with a fresh retry budget on each relayout.
+      el.on('plotly_afterplot', function() { alignYAxisLabels(); });
       
       // Store the y-axis range to prevent zoom (but allow pan)
       var currentYRange = null;
