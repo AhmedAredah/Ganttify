@@ -1,3 +1,17 @@
+# ganttify 0.2.8
+
+## Bug Fix
+
+* **Y-axis labels no longer overlap the bars**: When `show_yaxis_labels = TRUE`,
+  the activity tick labels were rendering inside the plot area, to the right of
+  the y-axis line, overlapping the activity bars. The `onRender` alignment
+  handler was forcing SVG `text-anchor='start'` on each left-axis label without
+  shifting its `x` coordinate, so the text grew rightward from the axis into the
+  bars. The handler is now a no-op: plotly's native `text-anchor='end'` keeps
+  left-axis labels flush against the axis and fully within the reserved left
+  gutter, both on initial render and after every pan/zoom. No overlap, no
+  clipping.
+
 # ganttify 0.2.7
 
 ## Improvements

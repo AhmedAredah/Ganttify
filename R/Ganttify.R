@@ -1968,13 +1968,30 @@ Ganttify <- function(
       // Flag to control whether to apply y-axis label alignment
       var shouldAlignLabels = ", js_show_yaxis_labels, ";
 
-      // Function to left-align y-axis tick labels (only when all labels are shown)
+      // Function to align y-axis tick labels within the left gutter.
+      //
+      // PREVIOUS BUG: this used to force text-anchor='start' on every label
+      // WITHOUT moving the label's x coordinate. For a left-side y-axis, plotly
+      // places each tick label's x just left of the axis line (x is in plot
+      // pixel coords; the axis sits at x = left margin = effective_label_width)
+      // and renders with the native text-anchor='end', so the label's RIGHT
+      // edge butts against the axis and the text grows LEFTWARD into the
+      // reserved gutter -- no overlap with the bars. Flipping the anchor to
+      // 'start' at that same x made the text grow RIGHTWARD from the axis,
+      // crossing into the plot area and overlapping the activity bars (only
+      // when show_yaxis_labels is ON, i.e. shouldAlignLabels === true).
+      //
+      // FIX: leave plotly's native text-anchor='end' in place. The left margin
+      // (effective_label_width) is sized to the label width, so right-aligned
+      // labels sit flush against the axis, fully inside the gutter, and never
+      // overlap the bars -- on initial render and after every pan/zoom relayout.
+      // This intentionally preserves plotly's default anchoring rather than
+      // re-anchoring, which would risk long labels clipping or colliding with
+      // the axis.
       function alignYAxisLabels() {
-        if (!shouldAlignLabels) return;  // Skip alignment when labels are hidden/partial
-        var yAxisLabels = el.querySelectorAll('.yaxislayer-above text');
-        yAxisLabels.forEach(function(label) {
-          label.setAttribute('text-anchor', 'start');
-        });
+        if (!shouldAlignLabels) return;  // Skip when labels are hidden/partial
+        // No-op: plotly's native text-anchor='end' already keeps left-axis
+        // labels within the reserved left gutter. Do NOT override the anchor.
       }
 
       // Function to update x-axis date format based on visible range
