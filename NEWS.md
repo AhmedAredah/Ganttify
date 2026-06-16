@@ -1,3 +1,40 @@
+# ganttify 0.2.11
+
+## Bug Fix
+
+* **Fixed a fatal R parse error that prevented 0.2.10 from building or
+  installing**: The y-axis label truncation handler added in 0.2.10 embedded a
+  JavaScript regex (`full.replace(/^[\s]+/, '')`) inside the `onRender` R
+  double-quoted string. The `\s` is not a valid R string escape, so R rejected
+  the entire source file (`'\s' is an unrecognized escape in character
+  string`), breaking package build, install, and CI (pkgdown, Auto Release,
+  R-CMD-check). The offending regex is removed; the handler now uses the
+  already-computed de-indented `body` text for the `aria-label`.
+
+* **Corrected the truncation's leading-indent detection**: The `fitLabel()`
+  indent scan only recognized regular spaces and tabs, but the WBS hierarchy
+  indentation is built from non-breaking spaces (` `). As a result the
+  indent was not detected and truncation chopped from the very first character,
+  destroying the hierarchy indentation the feature is meant to preserve. The
+  scan now also recognizes the non-breaking space, so truncated labels keep
+  their leading indentation.
+
+* **Fixed the hover popup not appearing on truncated y-axis labels**: The
+  custom hover popup (and the screen-reader `aria-label`) added in 0.2.10 never
+  triggered because plotly renders the y-axis tick text inside SVG layers that
+  default to `pointer-events: none` and routes all interaction through its own
+  transparent drag rectangle. As a result `document.elementFromPoint()` over a
+  label returned the plot's `svg-container`, never the `<text>` node, so the
+  delegated `mouseover` handler's target was never a label and the popup stayed
+  hidden. Each truncated label now explicitly sets `pointer-events: all` on the
+  `<text>` node and its containing tick `<g>`, making the label the real hover
+  hit-target so the custom div popup fires. As a robust fallback, every
+  truncated label also gets a native SVG `<title>` child holding the full
+  untruncated text, which the browser surfaces as a built-in tooltip even if the
+  custom popup is missed; the `<title>` is created/refreshed idempotently so
+  plotly relayouts never stack duplicates, and it is removed when a label is
+  short enough to no longer need truncation.
+
 # ganttify 0.2.10
 
 ## Improvements

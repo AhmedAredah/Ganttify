@@ -2021,95 +2021,56 @@ Ganttify <- function(
       // requestAnimationFrame and re-run, retrying a bounded number of times.
       var LEFT_PAD = 4;       // px from the SVG/plot left edge for left-aligned labels
       var SAFETY_GAP = 6;     // px clearance kept between label end and the axis line
-      var ELLIPSIS = '…';
+      var ELLIPSIS = String.fromCharCode(8230);  // '...' built from char code so the R source stays pure ASCII (locale-safe)
 
-      // ---- Hover tooltip (approach (a): custom positioned div) ----------------
-      // A single reusable div appended to the widget container shows the FULL
-      // (untruncated) label text on hover. We use a custom div (not a native
-      // <title>) for instant appearance and full styling control on the white
-      // plot background. Only truncated labels get the popup (a non-truncated
-      // label already shows its full text, so a popup would be redundant); every
-      // truncated label also gets an aria-label for screen-reader access.
-      //
-      // LEAK PREVENTION: listeners are attached via ONE delegated set of
-      // handlers on el (bound exactly once, guarded by elTooltipBound). Because
-      // the handler re-runs on every relayout we never add per-node listeners,
-      // so relayout can never stack duplicates. Per-node state lives only in
-      // data-* attributes, which plotly's own node recycling discards.
-      var tooltipEl = null;
-      var elTooltipBound = false;
+      // ---- Hover tooltip: native SVG <title> ----------------------------------
+      // Truncated labels surface their full text via a native SVG <title> child
+      // (see setNativeTitle below), which the browser renders as a built-in
+      // tooltip on hover. We deliberately do NOT use a custom styled div: the
+      // native tooltip needs no positioning/leak management and reads as the
+      // expected, professional browser tooltip. Truncated labels also carry an
+      // aria-label for screen-reader access. The native tooltip only appears
+      // because enableHover() flips the label's pointer-events back on (plotly
+      // leaves the axis text layers at pointer-events:none).
 
-      function ensureTooltipEl() {
-        if (tooltipEl && tooltipEl.parentNode) return tooltipEl;
-        tooltipEl = document.createElement('div');
-        tooltipEl.className = 'ganttify-yaxis-tooltip';
-        tooltipEl.setAttribute('role', 'tooltip');
-        tooltipEl.style.position = 'absolute';
-        tooltipEl.style.zIndex = '10000';
-        tooltipEl.style.pointerEvents = 'none';
-        tooltipEl.style.display = 'none';
-        tooltipEl.style.maxWidth = '420px';
-        tooltipEl.style.padding = '5px 9px';
-        tooltipEl.style.background = '#ffffff';
-        tooltipEl.style.color = '#222222';
-        tooltipEl.style.border = '1px solid #b0b0b0';
-        tooltipEl.style.borderRadius = '4px';
-        tooltipEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.18)';
-        tooltipEl.style.font = '12px/1.4 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif';
-        tooltipEl.style.whiteSpace = 'pre';
-        tooltipEl.style.left = '0px';
-        tooltipEl.style.top = '0px';
-        if (getComputedStyle(el).position === 'static') { el.style.position = 'relative'; }
-        el.appendChild(tooltipEl);
-        return tooltipEl;
+      // Set or refresh a native SVG <title> child on a text node so the browser
+      // shows the full label as a built-in tooltip. This is a robust fallback
+      // that works even if the custom div delegation misses (e.g. plotly hit-
+      // testing quirks). Guarded against duplicates on relayout: we reuse the
+      // existing <title> if present rather than appending a second one.
+      function setNativeTitle(node, full) {
+        var t = null;
+        for (var c = node.firstChild; c; c = c.nextSibling) {
+          if (c.nodeType === 1 && c.tagName && c.tagName.toLowerCase() === 'title') { t = c; break; }
+        }
+        if (!t) {
+          t = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          node.insertBefore(t, node.firstChild);
+        }
+        if (t.textContent !== full) { t.textContent = full; }
       }
 
-      function positionTooltip(clientX, clientY) {
-        if (!tooltipEl) return;
-        var rect = el.getBoundingClientRect();
-        var x = clientX - rect.left + 14;
-        var y = clientY - rect.top + 14;
-        // Keep the popup inside the widget horizontally.
-        var maxX = el.clientWidth - tooltipEl.offsetWidth - 4;
-        if (x > maxX) { x = Math.max(4, maxX); }
-        if (y < 0) { y = 0; }
-        tooltipEl.style.left = x + 'px';
-        tooltipEl.style.top = y + 'px';
-      }
-
-      function isYAxisLabel(node) {
-        // Climb from the event target to a y-axis tick text node, if any.
-        for (var n = node; n && n !== el; n = n.parentNode) {
-          if (n.tagName && n.tagName.toLowerCase() === 'text' &&
-              n.getAttribute('data-truncated') === '1') {
-            return n;
+      function removeNativeTitle(node) {
+        for (var c = node.firstChild; c; c = c.nextSibling) {
+          if (c.nodeType === 1 && c.tagName && c.tagName.toLowerCase() === 'title') {
+            node.removeChild(c);
+            return;
           }
         }
-        return null;
       }
 
-      function bindTooltipDelegation() {
-        if (elTooltipBound) return;       // bind exactly once -> no leaks on relayout
-        elTooltipBound = true;
-        el.addEventListener('mouseover', function(ev) {
-          var label = isYAxisLabel(ev.target);
-          if (!label) return;
-          var full = label.getAttribute('data-full-label');
-          if (full === null) return;
-          ensureTooltipEl();
-          tooltipEl.textContent = full;
-          tooltipEl.style.display = 'block';
-          positionTooltip(ev.clientX, ev.clientY);
-        });
-        el.addEventListener('mousemove', function(ev) {
-          if (!tooltipEl || tooltipEl.style.display === 'none') return;
-          if (!isYAxisLabel(ev.target)) { tooltipEl.style.display = 'none'; return; }
-          positionTooltip(ev.clientX, ev.clientY);
-        });
-        el.addEventListener('mouseout', function(ev) {
-          if (!tooltipEl) return;
-          if (isYAxisLabel(ev.target)) { tooltipEl.style.display = 'none'; }
-        });
+      // Make a label node the actual hover hit-target. plotly leaves the axis
+      // text layers at pointer-events:none (it routes interaction through its
+      // own transparent drag <rect>), so without this the <text> never becomes
+      // an event target and neither the custom div nor a native <title> can
+      // trigger. Set pointer-events:all on the text AND its containing tick <g>.
+      function enableHover(node) {
+        node.style.pointerEvents = 'all';
+        node.style.cursor = 'default';
+        var g = node.parentNode;
+        if (g && g.tagName && g.tagName.toLowerCase() === 'g') {
+          g.style.pointerEvents = 'all';
+        }
       }
 
       // Truncate a single text node so it fits, preserving leading indent.
@@ -2117,8 +2078,15 @@ Ganttify <- function(
       function fitLabel(node, full, maxWidth) {
         // Split off the leading whitespace (hierarchy indent) we must keep.
         var indentLen = 0;
-        while (indentLen < full.length && (full.charAt(indentLen) === ' ' || full.charAt(indentLen) === '\t')) {
+        // Leading indent chars: regular space (32), tab (9), and non-breaking
+        // space (160). Compare char CODES (not string literals) so the R source
+        // for this very long onRender string stays pure ASCII: a unicode escape
+        // inside a string literal over 10000 chars fails to parse on non-UTF-8
+        // (Windows) locales, which broke local installs of the package.
+        var cc = full.charCodeAt(indentLen);
+        while (indentLen < full.length && (cc === 32 || cc === 9 || cc === 160)) {
           indentLen++;
+          cc = full.charCodeAt(indentLen);
         }
         var indent = full.substring(0, indentLen);
         var body = full.substring(indentLen);
@@ -2130,6 +2098,7 @@ Ganttify <- function(
         if (LEFT_PAD + width <= maxWidth) {
           node.removeAttribute('data-truncated');
           node.removeAttribute('aria-label');
+          removeNativeTitle(node);  // full text is visible; no tooltip needed
           return false;
         }
 
@@ -2147,15 +2116,20 @@ Ganttify <- function(
         // Degenerate: even 'indent + ellipsis' overflows -> show just that.
         node.textContent = indent + body.substring(0, best) + ELLIPSIS;
         node.setAttribute('data-truncated', '1');
-        node.setAttribute('aria-label', full.replace(/^[\s]+/, ''));
+        node.setAttribute('aria-label', body);
+        // Make this node the real hover hit-target (plotly disables pointer
+        // events on axis text by default) and attach a native <title> fallback
+        // so the full label always surfaces, even if the custom popup misses.
+        // Note: setting textContent above wipes child nodes, so the <title>
+        // must be (re)created AFTER the final textContent assignment.
+        enableHover(node);
+        setNativeTitle(node, full);
         return true;
       }
 
       function alignYAxisLabels(retriesLeft) {
         if (!shouldAlignLabels) return;  // Skip when labels are hidden/partial
         if (typeof retriesLeft === 'undefined') retriesLeft = 5;
-
-        bindTooltipDelegation();  // idempotent; binds once
 
         // plotly renders left/below y-axis tick labels in g.yaxislayer-above;
         // fall back to the generic .ytick text selector if the layer is absent.
