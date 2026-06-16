@@ -1053,15 +1053,20 @@ Ganttify <- function(
       return(result)
     }
     
-    # Add WBS item
-    result <- c(result, list(list(
-      type = "WBS",
-      id = wbs_id,
-      name = wbs_df$Name[wbs_df$ID == wbs_id],
-      level = wbs_df$Level[wbs_df$ID == wbs_id],
-      start = wbs_df$Start_Date[wbs_df$ID == wbs_id],
-      end = wbs_df$End_Date[wbs_df$ID == wbs_id]
-    )))
+    # Add WBS item (only if show_wbs is TRUE — mirrors the show_activities gate
+    # below, so hiding WBS items removes their row entirely instead of leaving
+    # an empty y-axis slot). y_position is derived from display_order length,
+    # so omitting the row keeps numbering contiguous automatically.
+    if (show_wbs) {
+      result <- c(result, list(list(
+        type = "WBS",
+        id = wbs_id,
+        name = wbs_df$Name[wbs_df$ID == wbs_id],
+        level = wbs_df$Level[wbs_df$ID == wbs_id],
+        start = wbs_df$Start_Date[wbs_df$ID == wbs_id],
+        end = wbs_df$End_Date[wbs_df$ID == wbs_id]
+      )))
+    }
     
     # Add activities for this WBS (only if show_activities is TRUE)
     if (show_activities) {
@@ -1860,25 +1865,36 @@ Ganttify <- function(
 
   # Determine which y-axis labels to show based on configuration
   if (nrow(plot_data) > 0) {
+    is_wbs_row <- plot_data$type == "WBS"
+    # Activity-row labels are governed by show_yaxis_labels (the "Show Activities
+    # Labels on Y-Axis" toggle); WBS-row labels by show_wbs_labels ("Show
+    # Conformity Year Labels on Y-Axis"). The two toggles are independent.
+    yaxis_ticktext <- rep("", nrow(plot_data))
     if (show_yaxis_labels) {
-      # Show all labels (default behavior)
-      yaxis_ticktext <- plot_data$y_label_html
-      effective_label_width <- yaxis_label_width
-    } else if (show_wbs_labels) {
-      # Only show WBS labels, hide activity labels
-      yaxis_ticktext <- ifelse(plot_data$type == "WBS", plot_data$y_label_html, "")
-      # Calculate margin based on actual WBS label lengths (smaller than full labels)
-      wbs_labels <- plot_data$y_label[plot_data$type == "WBS"]
-      if (length(wbs_labels) > 0) {
-        max_wbs_chars <- max(nchar(wbs_labels), na.rm = TRUE)
-        # Estimate width: ~7px per character for Courier New 11px + 20px padding
-        effective_label_width <- min(yaxis_label_width, max(100, max_wbs_chars * 7 + 20))
+      yaxis_ticktext[!is_wbs_row] <- plot_data$y_label_html[!is_wbs_row]
+    }
+    if (show_wbs_labels) {
+      yaxis_ticktext[is_wbs_row] <- plot_data$y_label_html[is_wbs_row]
+    }
+
+    # Reserve left-margin width based on which labels are actually shown.
+    if (any(yaxis_ticktext != "")) {
+      if (show_yaxis_labels) {
+        # Activity labels can be long; reserve the full configured width.
+        effective_label_width <- yaxis_label_width
       } else {
-        effective_label_width <- 100
+        # Only WBS labels shown — size the margin to the WBS label lengths.
+        wbs_labels <- plot_data$y_label[is_wbs_row]
+        if (length(wbs_labels) > 0) {
+          max_wbs_chars <- max(nchar(wbs_labels), na.rm = TRUE)
+          # ~7px per character for Courier New 11px + 20px padding
+          effective_label_width <- min(yaxis_label_width, max(100, max_wbs_chars * 7 + 20))
+        } else {
+          effective_label_width <- 100
+        }
       }
     } else {
-      # Hide all labels - use minimal margin
-      yaxis_ticktext <- rep("", nrow(plot_data))
+      # No labels shown - use minimal margin
       effective_label_width <- 50
     }
   } else {
