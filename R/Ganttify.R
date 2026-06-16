@@ -1264,7 +1264,7 @@ Ganttify <- function(
     activity_data <- plot_data[plot_data$type == "Activity", ]
     
     # Add WBS bars (thinner lines)
-    if (nrow(wbs_data) > 0) {
+    if (show_wbs && nrow(wbs_data) > 0) {
       for (i in 1:nrow(wbs_data)) {
         wbs_id <- wbs_data$wbs_id[i]
 

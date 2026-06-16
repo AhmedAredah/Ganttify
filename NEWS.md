@@ -1,8 +1,18 @@
-# ganttify 0.2.11
+# ganttify 0.2.12
 
 ## Bug Fix
 
-* **Fixed a fatal R parse error that prevented 0.2.10 from building or
+* **The WBS `show` flag now actually hides the WBS bars**: The display-config
+  option `display_config$wbs$show` (surfaced in AQMS as the "Show Conformity
+  Year Items" checkbox) was read into `show_wbs` but never used to gate the WBS
+  bar-drawing loop, which was guarded only by `if (nrow(wbs_data) > 0)`. As a
+  result the gray WBS lines rendered unconditionally and unchecking the option
+  had no visible effect, even though the analogous activity loop was correctly
+  guarded by `if (show_activities && nrow(activity_data) > 0)`. The WBS loop is
+  now guarded by `if (show_wbs && nrow(wbs_data) > 0)`, making the two paths
+  symmetric so `show = FALSE` hides the WBS bars as expected.
+
+* **Fatal R parse error that prevented 0.2.10 from building or
   installing**: The y-axis label truncation handler added in 0.2.10 embedded a
   JavaScript regex (`full.replace(/^[\s]+/, '')`) inside the `onRender` R
   double-quoted string. The `\s` is not a valid R string escape, so R rejected
@@ -19,21 +29,20 @@
   scan now also recognizes the non-breaking space, so truncated labels keep
   their leading indentation.
 
-* **Fixed the hover popup not appearing on truncated y-axis labels**: The
-  custom hover popup (and the screen-reader `aria-label`) added in 0.2.10 never
-  triggered because plotly renders the y-axis tick text inside SVG layers that
-  default to `pointer-events: none` and routes all interaction through its own
-  transparent drag rectangle. As a result `document.elementFromPoint()` over a
-  label returned the plot's `svg-container`, never the `<text>` node, so the
-  delegated `mouseover` handler's target was never a label and the popup stayed
-  hidden. Each truncated label now explicitly sets `pointer-events: all` on the
-  `<text>` node and its containing tick `<g>`, making the label the real hover
-  hit-target so the custom div popup fires. As a robust fallback, every
-  truncated label also gets a native SVG `<title>` child holding the full
-  untruncated text, which the browser surfaces as a built-in tooltip even if the
-  custom popup is missed; the `<title>` is created/refreshed idempotently so
-  plotly relayouts never stack duplicates, and it is removed when a label is
-  short enough to no longer need truncation.
+* **Truncated y-axis labels reveal their full text on hover via a native
+  browser tooltip**: The hover reveal added in 0.2.10 never triggered because
+  plotly renders the y-axis tick text inside SVG layers that default to
+  `pointer-events: none` and routes all interaction through its own transparent
+  drag rectangle, so the label `<text>` node was never the hover hit-target.
+  Each truncated label now explicitly sets `pointer-events: all` on the `<text>`
+  node and its containing tick `<g>`, and is given a native SVG `<title>` child
+  holding the full untruncated text. The browser surfaces that `<title>` as a
+  built-in tooltip on hover; it is created/refreshed idempotently so plotly
+  relayouts never stack duplicates, and it is removed when a label is short
+  enough to no longer need truncation. (An earlier custom styled-`<div>` popup
+  was dropped in favor of the native tooltip — the native one is cleaner, needs
+  no positioning math or listener management, and avoided a double-popup where
+  both rendered at once. The screen-reader `aria-label` is still set.)
 
 # ganttify 0.2.10
 
