@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">ganttify</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.9</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">0.2.11</span>
       </span>
     </div>
 
@@ -44,9 +44,30 @@
   <div class="col-md-9 contents">
     <div class="page-header">
       <h1 data-toc-skip>Changelog <small></small></h1>
-      <small>Source: <a href="https://github.com/AhmedAredah/Ganttify/blob/v0.2.9/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/AhmedAredah/Ganttify/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.11" id="ganttify-0211">ganttify 0.2.11<a class="anchor" aria-label="anchor" href="#ganttify-0211"></a></h2>
+<div class="section level3">
+<h3 id="bug-fix-0-2-11">Bug Fix<a class="anchor" aria-label="anchor" href="#bug-fix-0-2-11"></a></h3>
+<ul><li><p><strong>Fixed a fatal R parse error that prevented 0.2.10 from building or installing</strong>: The y-axis label truncation handler added in 0.2.10 embedded a JavaScript regex (<code>full.replace(/^[\s]+/, '')</code>) inside the <code>onRender</code> R double-quoted string. The <code>\s</code> is not a valid R string escape, so R rejected the entire source file (<code>'\s' is an unrecognized escape in character string</code>), breaking package build, install, and CI (pkgdown, Auto Release, R-CMD-check). The offending regex is removed; the handler now uses the already-computed de-indented <code>body</code> text for the <code>aria-label</code>.</p></li>
+<li><p><strong>Corrected the truncation’s leading-indent detection</strong>: The <code>fitLabel()</code> indent scan only recognized regular spaces and tabs, but the WBS hierarchy indentation is built from non-breaking spaces (<code> </code>). As a result the indent was not detected and truncation chopped from the very first character, destroying the hierarchy indentation the feature is meant to preserve. The scan now also recognizes the non-breaking space, so truncated labels keep their leading indentation.</p></li>
+<li><p><strong>Fixed the hover popup not appearing on truncated y-axis labels</strong>: The custom hover popup (and the screen-reader <code>aria-label</code>) added in 0.2.10 never triggered because plotly renders the y-axis tick text inside SVG layers that default to <code>pointer-events: none</code> and routes all interaction through its own transparent drag rectangle. As a result <code>document.elementFromPoint()</code> over a label returned the plot’s <code>svg-container</code>, never the <code>&lt;text&gt;</code> node, so the delegated <code>mouseover</code> handler’s target was never a label and the popup stayed hidden. Each truncated label now explicitly sets <code>pointer-events: all</code> on the <code>&lt;text&gt;</code> node and its containing tick <code>&lt;g&gt;</code>, making the label the real hover hit-target so the custom div popup fires. As a robust fallback, every truncated label also gets a native SVG <code>&lt;title&gt;</code> child holding the full untruncated text, which the browser surfaces as a built-in tooltip even if the custom popup is missed; the <code>&lt;title&gt;</code> is created/refreshed idempotently so plotly relayouts never stack duplicates, and it is removed when a label is short enough to no longer need truncation.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="0.2.10" id="ganttify-0210">ganttify 0.2.10<a class="anchor" aria-label="anchor" href="#ganttify-0210"></a></h2>
+<div class="section level3">
+<h3 id="improvements-0-2-10">Improvements<a class="anchor" aria-label="anchor" href="#improvements-0-2-10"></a></h3>
+<ul><li>
+<p><strong>Long y-axis labels are now truncated with an ellipsis (instead of right-aligned) and reveal their full text on hover</strong>: When <code>show_yaxis_labels = TRUE</code>, any tick label too long to fit the reserved left gutter previously fell back to plotly’s native right-alignment, which kept the label inside the gutter but collapsed its leading indentation and hid the WBS hierarchy for that row.</p>
+<p>The <code>onRender</code> alignment handler now <strong>left-aligns every label</strong> and, for labels that do not fit, <strong>truncates the trailing content and appends an ellipsis (<code>…</code>)</strong> while preserving the leading whitespace that encodes the WBS depth. As a result the parent/child hierarchy stays visible for <em>all</em> rows, not just the ones short enough to fit — truncation is a strictly better fallback than right-alignment. The fit is computed with a bounded binary search over the rendered text width (<code>getComputedTextLength()</code>), guarded against the degenerate case where even <code>indent + …</code> overflows.</p>
+<p>The original, untruncated label text is cached in a <code>data-full-label</code> attribute before any mutation, so re-runs on pan/zoom relayout always truncate from the original rather than from already-truncated text.</p>
+<p><strong>Hover popup + accessibility</strong>: hovering a truncated label shows a small, self-contained popup (a custom absolutely-positioned div appended to the widget) with the full untruncated text, and each truncated label also carries an <code>aria-label</code> with the full text for screen readers. The popup is wired through a single set of delegated listeners bound once on the widget container (guarded so the per-relayout re-run never stacks duplicate listeners), and is hidden cleanly when the pointer leaves a label.</p>
+</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="0.2.9" id="ganttify-029">ganttify 0.2.9<a class="anchor" aria-label="anchor" href="#ganttify-029"></a></h2>
 <div class="section level3">
